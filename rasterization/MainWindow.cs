@@ -88,7 +88,7 @@ namespace rasterization {
         Circle newCircle = new(tempPoint, r);
         shapes.Add(newCircle);
         Render(newCircle);
-        lineButton.Checked = false;
+        circleButton.Checked = false;
         break;
 
       case State.NextPointOfPolygon:

@@ -11,7 +11,7 @@
     public abstract void Draw(byte[] rgbValues, int width, int height, int stride);
 
     protected void PutPixel(int x, int y, byte[] rgbValues, int width, int height, int stride) {
-      if (x < 0 || x > width || y < 0 || y > height)
+      if (x < 0 || x >= width || y < 0 || y >= height)
         return;
       int index = y * stride + 4 * x;
       rgbValues[index + 0] = Color.B;
