@@ -16,6 +16,15 @@
       shapes.Add(new Line(point2, points[0]));
     }
 
+    override public Shape? CheckColision(Point point) {
+      foreach (var line in shapes) {
+        if (line.CheckColision(point) != null)
+          return this;
+      }
+
+      return null;
+    }
+
     new public void Add(Line line) {
       // TODO: add corner cases
       Line lastLine = shapes.Last();

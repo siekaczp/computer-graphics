@@ -1,4 +1,5 @@
 using System.Drawing.Imaging;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
 namespace rasterization {
@@ -15,20 +16,26 @@ namespace rasterization {
       }
     }
 
-    enum State {
+    private enum State {
       Idle,
       FirstPointOfLine,
       SecondPointOfLine,
       FirstPointOfCircle,
       SecondPointOfCircle,
       NextPointOfPolygon,
+      ShapeSelected,
     }
 
     private State state;
     private readonly Bitmap canvasBitmap;
+
     private readonly CompositeShape<Shape> shapes = new();
+    private Shape? selectedShape = null;
+
     private Point tempPoint;
     private readonly List<Point> tempListOfPoints = new();
+
+    private bool Antialiasing = false;
 
     public MainWindow() {
       InitializeComponent();
@@ -54,9 +61,11 @@ namespace rasterization {
       byte[] rgbValues = new byte[bytes];
       Marshal.Copy(ptr, rgbValues, 0, bytes);
 
-      shape.Draw(rgbValues, canvasBitmap.Width, canvasBitmap.Height, bmpData.Stride);
-      Marshal.Copy(rgbValues, 0, ptr, bytes);
+      shape.Draw(new ImageByteArray() {
+        RgbValues = rgbValues, Width = canvasBitmap.Width, Height = canvasBitmap.Height, Stride = bmpData.Stride
+      }, Antialiasing);
 
+      Marshal.Copy(rgbValues, 0, ptr, bytes);
       canvasBitmap.UnlockBits(bmpData);
       canvas.Refresh();
     }
@@ -97,7 +106,7 @@ namespace rasterization {
           int dist = (firstPoint.X - e.Location.X) * (firstPoint.X - e.Location.X)
           + (firstPoint.Y - e.Location.Y) * (firstPoint.Y - e.Location.Y);
 
-          if (dist <= 100) {
+          if (dist <= 4 * Shape.Epsilon * Shape.Epsilon) {
             state = State.Idle;
             Polygon newPolygon = new(new List<Point>(tempListOfPoints));
             shapes.Add(newPolygon);
@@ -108,6 +117,23 @@ namespace rasterization {
         }
 
         tempListOfPoints.Add(e.Location);
+        break;
+
+      case State.Idle:
+        selectedShape = shapes.CheckColision(e.Location);
+        if (selectedShape != null) {
+          state = State.ShapeSelected;
+          ShapeEditionControlsEnabled = true;
+          thicknessTextBox.Text = selectedShape.Thickness.ToString();
+          selectedShape.Color = Color.Red;
+          Render(selectedShape);
+        }
+        break;
+
+      case State.ShapeSelected:
+        selectedShape = null;
+        ShapeEditionControlsEnabled = false;
+        state = State.Idle;
         break;
       }
     }
@@ -126,68 +152,90 @@ namespace rasterization {
     }
 
     private void AntialiasingButton_Click(object sender, EventArgs e) {
-      throw new NotImplementedException();
+      if (Antialiasing) {
+        Antialiasing = false;
+        antialiasingButton.Text = "Turn on anti-aliasing";
+      } else {
+        Antialiasing = true;
+        antialiasingButton.Text = "Turn off anti-aliasing";
+      }
+
+      ResetImage();
+      Render(shapes);
+    }
+
+    private void UncheckAllButtons() {
+      lineButton.Checked = false;
+      circleButton.Checked = false;
+      polygonButton.Checked = false;
+      ShapeEditionControlsEnabled = false;
     }
 
     private void LineButton_Click(object sender, EventArgs e) {
-      switch (state) {
-      case State.Idle:
-        state = State.FirstPointOfLine;
-        lineButton.Checked = true;
-        break;
+      UncheckAllButtons();
 
-      case State.FirstPointOfLine:
+      if (state == State.FirstPointOfLine || state == State.SecondPointOfLine) {
         state = State.Idle;
         tempPoint = new Point();
-        lineButton.Checked = false;
-        break;
+        return;
       }
+
+      state = State.FirstPointOfLine;
+      lineButton.Checked = true;
     }
 
     private void CircleButton_Click(object sender, EventArgs e) {
-      switch (state) {
-      case State.Idle:
-        state = State.FirstPointOfCircle;
-        circleButton.Checked = true;
-        break;
+      UncheckAllButtons();
 
-      case State.FirstPointOfCircle:
+      if (state == State.FirstPointOfCircle || state == State.SecondPointOfCircle) {
         state = State.Idle;
         tempPoint = new Point();
-        circleButton.Checked = false;
-        break;
+        return;
       }
+
+      state = State.FirstPointOfCircle;
+      circleButton.Checked = true;
     }
 
     private void PolygonButton_Click(object sender, EventArgs e) {
-      switch (state) {
-      case State.Idle:
-        state = State.NextPointOfPolygon;
-        polygonButton.Checked = true;
-        break;
+      UncheckAllButtons();
+      tempListOfPoints.Clear();
 
-      case State.NextPointOfPolygon:
+      if (state == State.NextPointOfPolygon) {
         state = State.Idle;
-        polygonButton.Checked = false;
-        break;
+        tempPoint = new Point();
+        return;
       }
 
-      tempListOfPoints.Clear();
+      state = State.NextPointOfPolygon;
+      polygonButton.Checked = true;
     }
 
     private void DeleteButton_Click(object sender, EventArgs e) {
-      throw new NotImplementedException();
+      if (selectedShape == null)
+        return;
+
+      shapes.Remove(selectedShape);
+      selectedShape = null;
+      UncheckAllButtons();
+      state = State.Idle;
+
+      ResetImage();
+      Render(shapes);
     }
 
     private void ColorButton_Click(object sender, EventArgs e) {
       ColorDialog colorDialog = new() {
-        Color = ForeColor // TODO: get color of selected shape
+        Color = selectedShape?.Color ?? Color.Black,
+        FullOpen = true,
       };
 
       if (colorDialog.ShowDialog() == DialogResult.OK) {
-        MessageBox.Show(colorDialog.Color.ToString());
-        // TODO: assign color
-        throw new NotImplementedException();
+        if (selectedShape == null)
+          return;
+
+        selectedShape.Color = colorDialog.Color;
+        Render(selectedShape);
       }
     }
 
@@ -195,8 +243,20 @@ namespace rasterization {
       if (!int.TryParse(thicknessTextBox.Text, out int thickness)) {
         thickness = 1;
       }
-      // TODO: assign thickness
-      throw new NotImplementedException();
+
+      if (selectedShape == null)
+        return;
+
+      int oldThickness = selectedShape.Thickness;
+
+      selectedShape.Thickness = thickness;
+
+      if (oldThickness > thickness) {
+        ResetImage();
+        Render(shapes);
+      } else {
+        Render(selectedShape);
+      }
     }
   }
 }

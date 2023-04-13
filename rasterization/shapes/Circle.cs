@@ -8,14 +8,14 @@
       Radius = radius;
     }
 
-    public override void Draw(byte[] rgbValues, int width, int height, int stride) {
+    public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
       int dE = 3;
       int dSE = 5 - 2 * Radius;
       int d = 1 - Radius;
       int x = 0;
       int y = Radius;
 
-      PutPixel(Center.X + x, Center.Y + y, rgbValues, width, height, stride);
+      imageByteArray.PutPixel(Center.X + x, Center.Y + y, Color);
 
       while (y > x) {
         if (d < 0) {
@@ -31,15 +31,20 @@
 
         ++x;
 
-        PutPixel(Center.X + x, Center.Y + y, rgbValues, width, height, stride);
-        PutPixel(Center.X - x, Center.Y + y, rgbValues, width, height, stride);
-        PutPixel(Center.X + x, Center.Y - y, rgbValues, width, height, stride);
-        PutPixel(Center.X - x, Center.Y - y, rgbValues, width, height, stride);
-        PutPixel(Center.X + y, Center.Y + x, rgbValues, width, height, stride);
-        PutPixel(Center.X - y, Center.Y + x, rgbValues, width, height, stride);
-        PutPixel(Center.X + y, Center.Y - x, rgbValues, width, height, stride);
-        PutPixel(Center.X - y, Center.Y - x, rgbValues, width, height, stride);
+        imageByteArray.PutPixel(Center.X + x, Center.Y + y, Color);
+        imageByteArray.PutPixel(Center.X - x, Center.Y + y, Color);
+        imageByteArray.PutPixel(Center.X + x, Center.Y - y, Color);
+        imageByteArray.PutPixel(Center.X - x, Center.Y - y, Color);
+        imageByteArray.PutPixel(Center.X + y, Center.Y + x, Color);
+        imageByteArray.PutPixel(Center.X - y, Center.Y + x, Color);
+        imageByteArray.PutPixel(Center.X + y, Center.Y - x, Color);
+        imageByteArray.PutPixel(Center.X - y, Center.Y - x, Color);
       }
+    }
+
+    public override Shape? CheckColision(Point point) {
+      double dist = Math.Sqrt(Math.Pow(point.X - Center.X, 2) + Math.Pow(point.Y - Center.Y, 2));
+      return dist <= Radius + Epsilon && dist >= Radius - Epsilon ? this : null;
     }
   }
 }
