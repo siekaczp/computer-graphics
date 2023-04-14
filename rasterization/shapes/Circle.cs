@@ -8,6 +8,12 @@
       Radius = radius;
     }
 
+    public Circle(Point center, Point point) {
+      int r = (int) Math.Sqrt((center.X - point.X) * (center.X - point.X) + (center.Y - point.Y) * (center.Y - point.Y));
+      Center = center;
+      Radius = r;
+    }
+
     public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
       int dE = 3;
       int dSE = 5 - 2 * Radius;

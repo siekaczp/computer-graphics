@@ -27,12 +27,17 @@ namespace rasterization {
     }
 
     private State state;
+
     private readonly Bitmap canvasBitmap;
+    private readonly Graphics canvasGraphics;
+    private readonly PictureBox tempLayer;
+    private readonly Bitmap tempLayerBitmap;
+    private readonly Graphics tempLayerGraphics;
 
     private readonly CompositeShape<Shape> shapes = new();
+    private Shape? newShape = null;
     private Shape? selectedShape = null;
 
-    private Point tempPoint;
     private readonly List<Point> tempListOfPoints = new();
 
     private bool Antialiasing = false;
@@ -43,60 +48,94 @@ namespace rasterization {
 
       canvasBitmap = new Bitmap(canvas.Width, canvas.Height);
       canvas.Image = canvasBitmap;
-      ResetImage();
-    }
-
-    private void ResetImage() {
-      using Graphics g = Graphics.FromImage(canvasBitmap);
-      g.Clear(Color.White);
+      canvasGraphics = Graphics.FromImage(canvasBitmap);
+      canvasGraphics.Clear(Color.White);
       canvas.Refresh();
+
+      tempLayer = new() {
+        Parent = canvas,
+        Size = new Size(canvas.Width, canvas.Height),
+        BackColor = Color.Transparent
+      };
+
+      tempLayerBitmap = new Bitmap(tempLayer.Width, tempLayer.Height);
+      tempLayer.Image = tempLayerBitmap;
+      tempLayerGraphics = Graphics.FromImage(tempLayerBitmap);
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+
+      tempLayer.MouseClick += Canvas_MouseClick;
+      tempLayer.MouseDown += Canvas_MouseDown;
+      tempLayer.MouseUp += Canvas_MouseUp;
+      tempLayer.MouseMove += Canvas_MouseMove;
     }
 
-    private void Render(Shape shape) {
-      Rectangle rect = new(0, 0, canvasBitmap.Width, canvasBitmap.Height);
-      BitmapData bmpData = canvasBitmap.LockBits(rect, ImageLockMode.ReadWrite, canvasBitmap.PixelFormat);
+    private void Render(Bitmap bitmap, Shape shape) {
+      Rectangle rect = new(0, 0, bitmap.Width, bitmap.Height);
+      BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
 
       IntPtr ptr = bmpData.Scan0;
-      int bytes = Math.Abs(bmpData.Stride) * canvasBitmap.Height;
+      int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
       byte[] rgbValues = new byte[bytes];
       Marshal.Copy(ptr, rgbValues, 0, bytes);
 
       shape.Draw(new ImageByteArray() {
-        RgbValues = rgbValues, Width = canvasBitmap.Width, Height = canvasBitmap.Height, Stride = bmpData.Stride
+        RgbValues = rgbValues, Width = bitmap.Width, Height = bitmap.Height, Stride = bmpData.Stride
       }, Antialiasing);
 
       Marshal.Copy(rgbValues, 0, ptr, bytes);
-      canvasBitmap.UnlockBits(bmpData);
-      canvas.Refresh();
+      bitmap.UnlockBits(bmpData);
     }
 
-    private void Canvas_MouseClick(object sender, MouseEventArgs e) {
+    private void Canvas_MouseClick(object? sender, MouseEventArgs e) {
       switch (state) {
       case State.FirstPointOfLine:
         state = State.SecondPointOfLine;
-        tempPoint = e.Location;
+        newShape = new Line(e.Location, e.Location);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
         break;
 
       case State.SecondPointOfLine:
         state = State.Idle;
-        Line newLine = new(tempPoint, e.Location);
-        shapes.Add(newLine);
-        Render(newLine);
+        if (newShape is null)
+          break;
+
+        (newShape as Line)!.EndPoint = e.Location;
+        Render(canvasBitmap, newShape);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+
+        shapes.Add(newShape);
+        newShape = null;
+
         lineButton.Checked = false;
         break;
 
       case State.FirstPointOfCircle:
-        tempPoint = e.Location;
         state = State.SecondPointOfCircle;
+        newShape = new Circle(e.Location, e.Location);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
         break;
 
       case State.SecondPointOfCircle:
         state = State.Idle;
-        int r = (int) Math.Sqrt((tempPoint.X - e.Location.X) * (tempPoint.X - e.Location.X)
-          + (tempPoint.Y - e.Location.Y) * (tempPoint.Y - e.Location.Y));
-        Circle newCircle = new(tempPoint, r);
-        shapes.Add(newCircle);
-        Render(newCircle);
+        if (newShape is null)
+          break;
+
+        newShape = new Circle((newShape as Circle)!.Center, e.Location);
+        Render(canvasBitmap, newShape);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+
+        shapes.Add(newShape);
+        newShape = null;
+
         circleButton.Checked = false;
         break;
 
@@ -110,7 +149,13 @@ namespace rasterization {
             state = State.Idle;
             Polygon newPolygon = new(new List<Point>(tempListOfPoints));
             shapes.Add(newPolygon);
-            Render(newPolygon);
+
+            Render(canvasBitmap, newPolygon);
+            canvas.Refresh();
+
+            tempLayerGraphics.Clear(Color.Transparent);
+            tempLayer.Refresh();
+
             polygonButton.Checked = false;
             break;
           }
@@ -121,19 +166,65 @@ namespace rasterization {
 
       case State.Idle:
         selectedShape = shapes.CheckColision(e.Location);
-        if (selectedShape != null) {
-          state = State.ShapeSelected;
-          ShapeEditionControlsEnabled = true;
-          thicknessTextBox.Text = selectedShape.Thickness.ToString();
-          selectedShape.Color = Color.Red;
-          Render(selectedShape);
-        }
+        if (selectedShape is null)
+          break;
+
+        state = State.ShapeSelected;
+        ShapeEditionControlsEnabled = true;
+        thicknessTextBox.Text = selectedShape.Thickness.ToString();
+
+
+        Render(tempLayerBitmap, selectedShape);
+        canvas.Refresh();
         break;
 
       case State.ShapeSelected:
         selectedShape = null;
         ShapeEditionControlsEnabled = false;
         state = State.Idle;
+        break;
+      }
+    }
+
+    private void Canvas_MouseDown(object? sender, MouseEventArgs e) {
+
+    }
+
+    private void Canvas_MouseUp(object? sender, MouseEventArgs e) {
+
+    }
+
+    private void Canvas_MouseMove(object? sender, MouseEventArgs e) {
+      switch (state) {
+      case State.SecondPointOfLine:
+        if (newShape is null)
+          break;
+
+        (newShape as Line)!.EndPoint = e.Location;
+        tempLayerGraphics.Clear(Color.Transparent);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfCircle:
+        if (newShape is null)
+          break;
+
+        newShape = new Circle((newShape as Circle)!.Center, e.Location);
+        tempLayerGraphics.Clear(Color.Transparent);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
+        break;
+
+      case State.NextPointOfPolygon:
+        if (tempListOfPoints.Count == 0)
+          break;
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        for (int i = 1; i < tempListOfPoints.Count; i++)
+          Render(tempLayerBitmap, new Line(tempListOfPoints[i - 1], tempListOfPoints[i]));
+        Render(tempLayerBitmap, new Line(tempListOfPoints.Last(), e.Location));
+        tempLayer.Refresh();
         break;
       }
     }
@@ -147,8 +238,12 @@ namespace rasterization {
     }
 
     private void ClearButton_Click(object sender, EventArgs e) {
+      ShapeEditionControlsEnabled = false;
       shapes.Clear();
-      ResetImage();
+      canvasGraphics.Clear(Color.White);
+      canvas.Refresh();
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
     }
 
     private void AntialiasingButton_Click(object sender, EventArgs e) {
@@ -160,8 +255,9 @@ namespace rasterization {
         antialiasingButton.Text = "Turn off anti-aliasing";
       }
 
-      ResetImage();
-      Render(shapes);
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void UncheckAllButtons() {
@@ -176,7 +272,6 @@ namespace rasterization {
 
       if (state == State.FirstPointOfLine || state == State.SecondPointOfLine) {
         state = State.Idle;
-        tempPoint = new Point();
         return;
       }
 
@@ -189,7 +284,6 @@ namespace rasterization {
 
       if (state == State.FirstPointOfCircle || state == State.SecondPointOfCircle) {
         state = State.Idle;
-        tempPoint = new Point();
         return;
       }
 
@@ -203,7 +297,6 @@ namespace rasterization {
 
       if (state == State.NextPointOfPolygon) {
         state = State.Idle;
-        tempPoint = new Point();
         return;
       }
 
@@ -220,8 +313,9 @@ namespace rasterization {
       UncheckAllButtons();
       state = State.Idle;
 
-      ResetImage();
-      Render(shapes);
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void ColorButton_Click(object sender, EventArgs e) {
@@ -235,7 +329,8 @@ namespace rasterization {
           return;
 
         selectedShape.Color = colorDialog.Color;
-        Render(selectedShape);
+        Render(canvasBitmap, selectedShape);
+        canvas.Refresh();
       }
     }
 
@@ -248,15 +343,20 @@ namespace rasterization {
         return;
 
       int oldThickness = selectedShape.Thickness;
-
       selectedShape.Thickness = thickness;
 
       if (oldThickness > thickness) {
-        ResetImage();
-        Render(shapes);
+        canvasGraphics.Clear(Color.White);
+        Render(canvasBitmap, shapes);
       } else {
-        Render(selectedShape);
+        Render(canvasBitmap, selectedShape);
       }
+      canvas.Refresh();
+    }
+
+    private void MainWindow_FormClosed(object sender, FormClosedEventArgs e) {
+      canvasGraphics.Dispose();
+      tempLayerGraphics.Dispose();
     }
   }
 }

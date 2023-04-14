@@ -202,6 +202,7 @@
       Controls.Add(toolStrip1);
       Name = "MainWindow";
       Text = "Vector graphics editor";
+      FormClosed += MainWindow_FormClosed;
       toolStrip1.ResumeLayout(false);
       toolStrip1.PerformLayout();
       ((System.ComponentModel.ISupportInitialize) canvas).EndInit();
