@@ -52,5 +52,11 @@
       double dist = Math.Sqrt(Math.Pow(point.X - Center.X, 2) + Math.Pow(point.Y - Center.Y, 2));
       return dist <= Radius + Epsilon && dist >= Radius - Epsilon ? this : null;
     }
+
+    public override Point GetCenter() => Center;
+
+    public override void Move(int dx, int dy) {
+      Center = new Point(Center.X + dx, Center.Y + dy);
+    }
   }
 }

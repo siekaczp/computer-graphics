@@ -170,5 +170,12 @@ namespace rasterization {
 
       return dx * dx + dy * dy <= Epsilon * Epsilon ? this : null;
     }
+
+    public override Point GetCenter() => new Point((StartPoint.X + EndPoint.X) / 2, (StartPoint.Y + EndPoint.Y) / 2);
+
+    public override void Move(int dx, int dy) {
+      StartPoint = new Point(StartPoint.X + dx, StartPoint.Y + dy);
+      EndPoint = new Point(EndPoint.X + dx, EndPoint.Y + dy);
+    }
   }
 }

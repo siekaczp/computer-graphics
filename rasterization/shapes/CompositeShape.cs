@@ -23,9 +23,16 @@
       }
     }
 
+    protected Point centerSum = new(0, 0);
+
     public void Clear() => shapes.Clear();
 
-    public void Add(T shape) => shapes.Add(shape);
+    public void Add(T shape) {
+      Point center = shape.GetCenter();
+      centerSum.X += center.X;
+      centerSum.Y += center.Y;
+      shapes.Add(shape);
+    }
 
     public void Remove(T shape) => shapes.Remove(shape);
 
@@ -42,6 +49,16 @@
       }
 
       return null;
+    }
+
+    public override Point GetCenter() => new(centerSum.X / shapes.Count, centerSum.Y / shapes.Count);
+
+    public override void Move(int dx, int dy) {
+      foreach (var shape in shapes)
+        shape.Move(dx, dy);
+
+      centerSum.X += dx * shapes.Count;
+      centerSum.Y += dy * shapes.Count;
     }
   }
 }

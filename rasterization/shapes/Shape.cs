@@ -13,5 +13,9 @@
     public abstract void Draw(ImageByteArray imageByteArray, bool antialiasing);
 
     public abstract Shape? CheckColision(Point point);
+
+    public abstract Point GetCenter();
+
+    public abstract void Move(int dx, int dy);
   }
 }

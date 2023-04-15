@@ -9,10 +9,14 @@
 
       for (int i = 1; i < points.Count; i++) {
         point2 = points[i];
+        centerSum.X += (point1.X + point2.X) / 2;
+        centerSum.Y += (point1.Y + point2.Y) / 2;
         shapes.Add(new Line(point1, point2));
         point1 = point2;
       }
 
+      centerSum.X += (point2.X + points[0].X) / 2;
+      centerSum.Y += (point2.Y + points[0].Y) / 2;
       shapes.Add(new Line(point2, points[0]));
     }
 

@@ -24,9 +24,11 @@ namespace rasterization {
       SecondPointOfCircle,
       NextPointOfPolygon,
       ShapeSelected,
+      ShapeMoving,
     }
 
-    private State state;
+    private readonly Image moveIcon = Image.FromFile("move_icon.png");
+    private const int moveIconSize = 11;
 
     private readonly Bitmap canvasBitmap;
     private readonly Graphics canvasGraphics;
@@ -34,11 +36,13 @@ namespace rasterization {
     private readonly Bitmap tempLayerBitmap;
     private readonly Graphics tempLayerGraphics;
 
+    private State state;
     private readonly CompositeShape<Shape> shapes = new();
     private Shape? newShape = null;
     private Shape? selectedShape = null;
 
     private readonly List<Point> tempListOfPoints = new();
+    private Point lastPosition;
 
     private bool Antialiasing = false;
 
@@ -173,25 +177,50 @@ namespace rasterization {
         ShapeEditionControlsEnabled = true;
         thicknessTextBox.Text = selectedShape.Thickness.ToString();
 
-
-        Render(tempLayerBitmap, selectedShape);
-        canvas.Refresh();
+        tempLayerGraphics.Clear(Color.Transparent);
+        Point center = selectedShape!.GetCenter();
+        tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
+        tempLayer.Refresh();
         break;
 
       case State.ShapeSelected:
+        state = State.Idle;
         selectedShape = null;
         ShapeEditionControlsEnabled = false;
-        state = State.Idle;
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
         break;
       }
     }
 
     private void Canvas_MouseDown(object? sender, MouseEventArgs e) {
+      if (state != State.ShapeSelected || selectedShape == null)
+        return;
 
+      int selectedX = selectedShape.GetCenter().X;
+      int selectedY = selectedShape.GetCenter().Y;
+
+      if (e.Location.X >= selectedX - moveIconSize && e.Location.X <= selectedX + moveIconSize
+       && e.Location.Y >= selectedY - moveIconSize && e.Location.Y <= selectedY + moveIconSize) {
+        lastPosition = e.Location;
+        state = State.ShapeMoving;
+      }
     }
 
     private void Canvas_MouseUp(object? sender, MouseEventArgs e) {
+      if (state != State.ShapeMoving || selectedShape == null)
+        return;
 
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
+
+      state = State.Idle;
+      selectedShape = null;
+      ShapeEditionControlsEnabled = false;
     }
 
     private void Canvas_MouseMove(object? sender, MouseEventArgs e) {
@@ -224,6 +253,19 @@ namespace rasterization {
         for (int i = 1; i < tempListOfPoints.Count; i++)
           Render(tempLayerBitmap, new Line(tempListOfPoints[i - 1], tempListOfPoints[i]));
         Render(tempLayerBitmap, new Line(tempListOfPoints.Last(), e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.ShapeMoving:
+        int dx = e.Location.X - lastPosition.X;
+        int dy = e.Location.Y - lastPosition.Y;
+        lastPosition = e.Location;
+        selectedShape!.Move(dx, dy);
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        Render(tempLayerBitmap, selectedShape);
+        Point center = selectedShape.GetCenter();
+        tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
         tempLayer.Refresh();
         break;
       }
@@ -276,6 +318,8 @@ namespace rasterization {
       }
 
       state = State.FirstPointOfLine;
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
       lineButton.Checked = true;
     }
 
@@ -288,6 +332,8 @@ namespace rasterization {
       }
 
       state = State.FirstPointOfCircle;
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
       circleButton.Checked = true;
     }
 
@@ -301,6 +347,8 @@ namespace rasterization {
       }
 
       state = State.NextPointOfPolygon;
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
       polygonButton.Checked = true;
     }
 
@@ -316,6 +364,8 @@ namespace rasterization {
       canvasGraphics.Clear(Color.White);
       Render(canvasBitmap, shapes);
       canvas.Refresh();
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
     }
 
     private void ColorButton_Click(object sender, EventArgs e) {
