@@ -25,6 +25,7 @@ namespace rasterization {
       NextPointOfPolygon,
       ShapeSelected,
       ShapeMoving,
+      ShapeEditing,
     }
 
     private readonly Image moveIcon = Image.FromFile("move_icon.png");
@@ -199,16 +200,18 @@ namespace rasterization {
 
       int selectedX = selectedShape.GetCenter().X;
       int selectedY = selectedShape.GetCenter().Y;
+      lastPosition = e.Location;
 
       if (e.Location.X >= selectedX - moveIconSize && e.Location.X <= selectedX + moveIconSize
        && e.Location.Y >= selectedY - moveIconSize && e.Location.Y <= selectedY + moveIconSize) {
-        lastPosition = e.Location;
         state = State.ShapeMoving;
+      } else {
+        state = State.ShapeEditing;
       }
     }
 
     private void Canvas_MouseUp(object? sender, MouseEventArgs e) {
-      if (state != State.ShapeMoving || selectedShape == null)
+      if ((state != State.ShapeMoving && state != State.ShapeEditing) || selectedShape == null)
         return;
 
       tempLayerGraphics.Clear(Color.Transparent);
@@ -257,10 +260,18 @@ namespace rasterization {
         break;
 
       case State.ShapeMoving:
+      case State.ShapeEditing:
         int dx = e.Location.X - lastPosition.X;
         int dy = e.Location.Y - lastPosition.Y;
+
+        if (state == State.ShapeMoving) {
+          selectedShape!.Move(dx, dy);
+        } else {
+          if (!selectedShape!.Edit(lastPosition, dx, dy))
+            state = State.ShapeSelected;
+        }
+
         lastPosition = e.Location;
-        selectedShape!.Move(dx, dy);
 
         tempLayerGraphics.Clear(Color.Transparent);
         Render(tempLayerBitmap, selectedShape);

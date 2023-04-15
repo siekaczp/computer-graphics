@@ -60,5 +60,16 @@
       centerSum.X += dx * shapes.Count;
       centerSum.Y += dy * shapes.Count;
     }
+
+    public override bool Edit(Point position, int dx, int dy) {
+      foreach (var shape in shapes)
+        if (shape.Edit(position, dx, dy)) {
+          centerSum.X += dx;
+          centerSum.Y += dy;
+          return true;
+        }
+
+      return false;
+    }
   }
 }

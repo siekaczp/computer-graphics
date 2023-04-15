@@ -177,5 +177,20 @@ namespace rasterization {
       StartPoint = new Point(StartPoint.X + dx, StartPoint.Y + dy);
       EndPoint = new Point(EndPoint.X + dx, EndPoint.Y + dy);
     }
+
+    public override bool Edit(Point position, int dx, int dy) {
+      if (Math.Abs(position.X - StartPoint.X) <= Epsilon && Math.Abs(position.Y - StartPoint.Y) <= Epsilon) {
+        StartPoint = new Point(StartPoint.X + dx, StartPoint.Y + dy);
+        return true;
+      } else if (Math.Abs(position.X - EndPoint.X) <= Epsilon && Math.Abs(position.Y - EndPoint.Y) <= Epsilon) {
+        EndPoint = new Point(EndPoint.X + dx, EndPoint.Y + dy);
+        return true;
+      } else if (CheckColision(position) != null) {
+        Move(dx, dy);
+        return true;
+      }
+
+      return false;
+    }
   }
 }

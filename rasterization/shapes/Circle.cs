@@ -58,5 +58,12 @@
     public override void Move(int dx, int dy) {
       Center = new Point(Center.X + dx, Center.Y + dy);
     }
+
+    public override bool Edit(Point position, int dx, int dy) {
+      if (CheckColision(position) == null)
+        return false;
+      Radius = (int) Math.Sqrt(Math.Pow(Center.X - position.X - dx, 2) + Math.Pow(Center.Y - position.Y - dx, 2));
+      return true;
+    }
   }
 }

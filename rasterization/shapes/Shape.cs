@@ -17,5 +17,7 @@
     public abstract Point GetCenter();
 
     public abstract void Move(int dx, int dy);
+
+    public abstract bool Edit(Point position, int dx, int dy);
   }
 }
