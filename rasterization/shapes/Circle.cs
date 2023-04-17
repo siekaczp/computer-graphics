@@ -1,5 +1,7 @@
-﻿namespace rasterization {
-  internal class Circle : Shape {
+﻿using System.Xml;
+
+namespace rasterization {
+  public class Circle : Shape {
     public Point Center { get; set; }
     public int Radius { get; set; }
 
@@ -64,6 +66,25 @@
         return false;
       Radius = (int) Math.Sqrt(Math.Pow(Center.X - position.X - dx, 2) + Math.Pow(Center.Y - position.Y - dx, 2));
       return true;
+    }
+
+    public override XmlElement ToXmlElement(XmlDocument doc) {
+      XmlElement element = CreateXmlElement(doc, "Circle");
+      element.SetAttribute("CenterX", Center.X.ToString());
+      element.SetAttribute("CenterY", Center.Y.ToString());
+      element.SetAttribute("Radius", Radius.ToString());
+      return element;
+    }
+
+    public static new Circle? FromXml(XmlElement element) {
+      if (!int.TryParse(element.GetAttribute("CenterX"), out int centerX)
+        || !int.TryParse(element.GetAttribute("CenterY"), out int centerY)
+        || !int.TryParse(element.GetAttribute("Radius"), out int radius))
+        return null;
+
+      Circle newCircle = new(new Point(centerX, centerY), radius);
+      newCircle.SetAttributesFromXml(element);
+      return newCircle;
     }
   }
 }

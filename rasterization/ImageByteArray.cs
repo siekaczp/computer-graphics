@@ -1,5 +1,5 @@
 ﻿namespace rasterization {
-  internal record ImageByteArray {
+  public record ImageByteArray {
     public byte[] RgbValues { get; init; } = null!;
     public int Width { get; init; }
     public int Height { get; init; }

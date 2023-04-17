@@ -1,5 +1,7 @@
-﻿namespace rasterization {
-  internal class CompositeShape<T> : Shape where T : Shape {
+﻿using System.Xml;
+
+namespace rasterization {
+  public class CompositeShape<T> : Shape where T : Shape {
     protected readonly List<T> shapes = new();
     private Color _color;
     public override Color Color {
@@ -70,6 +72,29 @@
         }
 
       return false;
+    }
+
+    public override XmlElement ToXmlElement(XmlDocument doc) {
+      XmlElement element = CreateXmlElement(doc, "CompositeShape");
+
+      foreach (var shape in shapes) {
+        element.AppendChild(shape.ToXmlElement(doc));
+      }
+
+      return element;
+    }
+
+    public static new CompositeShape<Shape>? FromXml(XmlElement element) {
+      CompositeShape<Shape> shape = new();
+      shape.SetAttributesFromXml(element);
+
+      foreach (var innerElement in element.ChildNodes) {
+        Shape? newShape = Shape.FromXml((XmlElement) innerElement);
+        if (newShape is not null)
+          shape.Add(newShape);
+      }
+
+      return shape;
     }
   }
 }

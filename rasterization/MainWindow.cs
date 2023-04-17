@@ -1,6 +1,7 @@
 using System.Drawing.Imaging;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 namespace rasterization {
   public partial class MainWindow : Form {
@@ -38,7 +39,7 @@ namespace rasterization {
     private readonly Graphics tempLayerGraphics;
 
     private State state;
-    private readonly CompositeShape<Shape> shapes = new();
+    private CompositeShape<Shape> shapes = new();
     private Shape? newShape = null;
     private Shape? selectedShape = null;
 
@@ -283,11 +284,58 @@ namespace rasterization {
     }
 
     private void LoadButton_Click(object sender, EventArgs e) {
-      throw new NotImplementedException();
+      OpenFileDialog openFileDialog = new() {
+        Filter = "XML files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true
+      };
+
+      if (openFileDialog.ShowDialog() != DialogResult.OK)
+        return;
+
+      Stream fileStream = openFileDialog.OpenFile();
+      using StreamReader reader = new(fileStream);
+      string fileContent = reader.ReadToEnd();
+
+      XmlDocument doc = new();
+      try {
+        doc.LoadXml(fileContent);
+      } catch (XmlException) {
+        return;
+      }
+
+      if (doc.ChildNodes.Count != 1)
+        return;
+
+      XmlElement element = (XmlElement) doc.FirstChild!;
+      CompositeShape<Shape>? newShapes = CompositeShape<Shape>.FromXml(element);
+
+      if (newShapes is null)
+        return;
+
+      shapes = newShapes!;
+
+      state = State.Idle;
+      selectedShape = null;
+      ShapeEditionControlsEnabled = false;
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void SaveButton_Click(object sender, EventArgs e) {
-      throw new NotImplementedException();
+      SaveFileDialog saveFileDialog = new() {
+        Filter = "XML files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true
+      };
+
+      if (saveFileDialog.ShowDialog() != DialogResult.OK)
+        return;
+
+      Stream stream = saveFileDialog.OpenFile();
+      using TextWriter writer = new StreamWriter(stream);
+      writer.Write(shapes.ToString());
     }
 
     private void ClearButton_Click(object sender, EventArgs e) {

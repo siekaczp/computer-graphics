@@ -1,7 +1,7 @@
-﻿using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
+﻿using System.Xml;
 
 namespace rasterization {
-  internal class Line : Shape {
+  public class Line : Shape {
     public Point StartPoint { get; set; }
     public Point EndPoint { get; set; }
 
@@ -171,7 +171,7 @@ namespace rasterization {
       return dx * dx + dy * dy <= Epsilon * Epsilon ? this : null;
     }
 
-    public override Point GetCenter() => new Point((StartPoint.X + EndPoint.X) / 2, (StartPoint.Y + EndPoint.Y) / 2);
+    public override Point GetCenter() => new((StartPoint.X + EndPoint.X) / 2, (StartPoint.Y + EndPoint.Y) / 2);
 
     public override void Move(int dx, int dy) {
       StartPoint = new Point(StartPoint.X + dx, StartPoint.Y + dy);
@@ -191,6 +191,27 @@ namespace rasterization {
       }
 
       return false;
+    }
+
+    public override XmlElement ToXmlElement(XmlDocument doc) {
+      XmlElement element = CreateXmlElement(doc, "Line");
+      element.SetAttribute("StartPointX", StartPoint.X.ToString());
+      element.SetAttribute("StartPointY", StartPoint.Y.ToString());
+      element.SetAttribute("EndPointX", EndPoint.X.ToString());
+      element.SetAttribute("EndPointY", EndPoint.Y.ToString());
+      return element;
+    }
+
+    public static new Line? FromXml(XmlElement element) {
+      if (!int.TryParse(element.GetAttribute("StartPointX"), out int startPointX)
+        || !int.TryParse(element.GetAttribute("StartPointY"), out int startPointY)
+        || !int.TryParse(element.GetAttribute("EndPointX"), out int endPointX)
+        || !int.TryParse(element.GetAttribute("EndPointY"), out int endPointY))
+        return null;
+
+      Line newLine = new(new Point(startPointX, startPointY), new Point(endPointX, endPointY));
+      newLine.SetAttributesFromXml(element);
+      return newLine;
     }
   }
 }

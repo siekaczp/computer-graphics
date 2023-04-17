@@ -1,7 +1,7 @@
-﻿using System.Net;
+﻿using System.Xml;
 
 namespace rasterization {
-  class Polygon : CompositeShape<Line> {
+  public class Polygon : CompositeShape<Line> {
     public Polygon(List<Point> points) {
       if (points.Count < 2)
         return;
@@ -28,6 +28,14 @@ namespace rasterization {
       shapes.Add(new Line(point2, points[0]));
     }
 
+    private Polygon(List<Line> lines) {
+      foreach (var line in lines) {
+        shapes.Add(line);
+        centerSum.X += line.GetCenter().X;
+        centerSum.Y += line.GetCenter().Y;
+      }
+    }
+
     override public Shape? CheckColision(Point point) {
       foreach (var line in shapes) {
         if (line.CheckColision(point) != null)
@@ -35,35 +43,6 @@ namespace rasterization {
       }
 
       return null;
-    }
-
-    new public void Add(Line line) {
-      if (shapes.Count == 0) {
-        shapes.Add(line);
-        centerSum = shapes[0].GetCenter();
-      } else if (shapes.Count == 1) {
-        shapes.Add(new Line(shapes[0].EndPoint, line.StartPoint));
-        shapes.Add(line);
-        shapes.Add(new Line(line.EndPoint, shapes[0].StartPoint));
-        centerSum.X += shapes[1].GetCenter().X + shapes[2].GetCenter().X + shapes[3].GetCenter().X;
-        centerSum.Y += shapes[1].GetCenter().Y + shapes[2].GetCenter().Y + shapes[3].GetCenter().Y;
-      }
-
-      centerSum.X -= shapes[0].GetCenter().X;
-      centerSum.Y -= shapes[0].GetCenter().Y;
-      shapes[0].StartPoint = line.EndPoint;
-      centerSum.X += shapes[0].GetCenter().X;
-      centerSum.Y += shapes[0].GetCenter().Y;
-
-      centerSum.X -= shapes.Last().GetCenter().X;
-      centerSum.Y -= shapes.Last().GetCenter().Y;
-      shapes.Last().EndPoint = line.StartPoint;
-      centerSum.X += shapes.Last().GetCenter().X;
-      centerSum.Y += shapes.Last().GetCenter().Y;
-
-      shapes.Add(line);
-      centerSum.X += line.GetCenter().X;
-      centerSum.Y += line.GetCenter().Y;
     }
 
     public override bool Edit(Point position, int dx, int dy) {
@@ -116,6 +95,34 @@ namespace rasterization {
       centerSum.Y += dy;
 
       return true;
+    }
+
+    public override XmlElement ToXmlElement(XmlDocument doc) {
+      XmlElement element = CreateXmlElement(doc, "Polygon");
+
+      element.SetAttribute("CenterSumX", centerSum.X.ToString());
+      element.SetAttribute("CenterSumY", centerSum.Y.ToString());
+
+      foreach (var shape in shapes) {
+        element.AppendChild(shape.ToXmlElement(doc));
+      }
+
+      return element;
+    }
+
+    public static new Polygon? FromXml(XmlElement element) {
+      List<Line> lines = new();
+
+      foreach (var innerElement in element.ChildNodes) {
+        Line? newLine = Line.FromXml((XmlElement) innerElement);
+        if (newLine is not null)
+          lines.Add(newLine);
+      }
+
+      Polygon polygon = new(lines);
+      polygon.SetAttributesFromXml(element);
+
+      return polygon;
     }
   }
 }
