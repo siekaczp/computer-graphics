@@ -29,17 +29,7 @@ namespace rasterization {
       return element;
     }
 
-    protected void SetAttributesFromXml(XmlElement element) {
-      if (!int.TryParse(element.GetAttribute("Thickness"), out int thickness))
-        thickness = 1;
-      Thickness = thickness;
-
-      Color = ColorTranslator.FromHtml(element.GetAttribute("Color"));
-    }
-
-    public virtual XmlElement ToXmlElement(XmlDocument doc) {
-      return CreateXmlElement(doc, "CompositeShape");
-    }
+    public abstract XmlElement ToXmlElement(XmlDocument doc);
 
     public new string ToString() {
       XmlDocument doc = new();
@@ -47,10 +37,12 @@ namespace rasterization {
       return doc.OuterXml;
     }
 
-    public static Shape? FromXml(XmlElement element) {
-      string qualifiedName = typeof(Shape).AssemblyQualifiedName!.Replace("Shape", element.Name);
-      Type? type = Type.GetType(qualifiedName);
-      return type?.GetMethod("FromXml")?.Invoke(null, new object[] { element }) as Shape;
+    protected void SetAttributesFromXml(XmlElement element) {
+      if (!int.TryParse(element.GetAttribute("Thickness"), out int thickness))
+        thickness = 1;
+      Thickness = thickness;
+
+      Color = ColorTranslator.FromHtml(element.GetAttribute("Color"));
     }
   }
 }

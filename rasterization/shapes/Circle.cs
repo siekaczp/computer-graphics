@@ -11,10 +11,12 @@ namespace rasterization {
     }
 
     public Circle(Point center, Point point) {
-      int r = (int) Math.Sqrt((center.X - point.X) * (center.X - point.X) + (center.Y - point.Y) * (center.Y - point.Y));
+      int r = Distance(center, point);
       Center = center;
       Radius = r;
     }
+
+    static public int Distance(Point p1, Point p2) => (int) Math.Sqrt((p1.X - p2.X) * (p1.X - p2.X) + (p1.Y - p2.Y) * (p1.Y - p2.Y));
 
     public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
       int dE = 3;
@@ -51,7 +53,7 @@ namespace rasterization {
     }
 
     public override Shape? CheckColision(Point point) {
-      double dist = Math.Sqrt(Math.Pow(point.X - Center.X, 2) + Math.Pow(point.Y - Center.Y, 2));
+      int dist = Distance(point, Center);
       return dist <= Radius + Epsilon && dist >= Radius - Epsilon ? this : null;
     }
 
@@ -64,7 +66,8 @@ namespace rasterization {
     public override bool Edit(Point position, int dx, int dy) {
       if (CheckColision(position) == null)
         return false;
-      Radius = (int) Math.Sqrt(Math.Pow(Center.X - position.X - dx, 2) + Math.Pow(Center.Y - position.Y - dx, 2));
+
+      Radius = Distance(Center, position + new Size(dx, dy));
       return true;
     }
 
@@ -76,7 +79,7 @@ namespace rasterization {
       return element;
     }
 
-    public static new Circle? FromXml(XmlElement element) {
+    public static Circle? FromXml(XmlElement element) {
       if (!int.TryParse(element.GetAttribute("CenterX"), out int centerX)
         || !int.TryParse(element.GetAttribute("CenterY"), out int centerY)
         || !int.TryParse(element.GetAttribute("Radius"), out int radius))

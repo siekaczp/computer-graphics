@@ -8,9 +8,8 @@ namespace rasterization {
       get => _color;
       set {
         _color = value;
-        foreach (var shape in shapes) {
+        foreach (var shape in shapes)
           shape.Color = value;
-        }
       }
     }
 
@@ -19,9 +18,8 @@ namespace rasterization {
       get => _thickness;
       set {
         _thickness = value;
-        foreach (var shape in shapes) {
+        foreach (var shape in shapes)
           shape.Thickness = value;
-        }
       }
     }
 
@@ -39,9 +37,8 @@ namespace rasterization {
     public void Remove(T shape) => shapes.Remove(shape);
 
     public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
-      foreach (var shape in shapes) {
+      foreach (var shape in shapes)
         shape.Draw(imageByteArray, antialiasing);
-      }
     }
 
     public override Shape? CheckColision(Point point) {
@@ -77,19 +74,22 @@ namespace rasterization {
     public override XmlElement ToXmlElement(XmlDocument doc) {
       XmlElement element = CreateXmlElement(doc, "CompositeShape");
 
-      foreach (var shape in shapes) {
+      foreach (var shape in shapes)
         element.AppendChild(shape.ToXmlElement(doc));
-      }
 
       return element;
     }
 
-    public static new CompositeShape<Shape>? FromXml(XmlElement element) {
+    public static CompositeShape<Shape>? FromXml(XmlElement element) {
       CompositeShape<Shape> shape = new();
       shape.SetAttributesFromXml(element);
 
       foreach (var innerElement in element.ChildNodes) {
-        Shape? newShape = Shape.FromXml((XmlElement) innerElement);
+        XmlElement element1 = (XmlElement) innerElement;
+        string qualifiedName = typeof(Shape).AssemblyQualifiedName!.Replace("Shape", element1.Name);
+        Type? type = Type.GetType(qualifiedName);
+        Shape? newShape = type?.GetMethod("FromXml")?.Invoke(null, new object[] { element1 }) as Shape;
+
         if (newShape is not null)
           shape.Add(newShape);
       }

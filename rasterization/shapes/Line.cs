@@ -11,11 +11,11 @@ namespace rasterization {
     }
 
     public static Color Lerp(Color s, Color t, double k) {
-      var bk = (1 - k);
-      var a = s.A * bk + t.A * k;
-      var r = s.R * bk + t.R * k;
-      var g = s.G * bk + t.G * k;
-      var b = s.B * bk + t.B * k;
+      double bk = (1 - k);
+      double a = s.A * bk + t.A * k;
+      double r = s.R * bk + t.R * k;
+      double g = s.G * bk + t.G * k;
+      double b = s.B * bk + t.B * k;
       return Color.FromArgb((int) a, (int) r, (int) g, (int) b);
     }
 
@@ -66,7 +66,7 @@ namespace rasterization {
             ;
         } else {
           imageByteArray.PutPixel(x, y, Color);
-          for (int i = 1; i < Thickness / 2; i++) {
+          for (int i = 1; i <= Thickness / 2; i++) {
             imageByteArray.PutPixel(x, y + i, Color);
             imageByteArray.PutPixel(x, y - i, Color);
           }
@@ -94,7 +94,7 @@ namespace rasterization {
               ;
           } else {
             imageByteArray.PutPixel(x, y, Color);
-            for (int i = 1; i < Thickness / 2; i++) {
+            for (int i = 1; i <= Thickness / 2; i++) {
               imageByteArray.PutPixel(x, y + i, Color);
               imageByteArray.PutPixel(x, y - i, Color);
             }
@@ -114,7 +114,7 @@ namespace rasterization {
             ;
         } else {
           imageByteArray.PutPixel(x, y, Color);
-          for (int i = 1; i < Thickness / 2; i++) {
+          for (int i = 1; i <= Thickness / 2; i++) {
             imageByteArray.PutPixel(x + i, y, Color);
             imageByteArray.PutPixel(x - i, y, Color);
           }
@@ -142,7 +142,7 @@ namespace rasterization {
               ;
           } else {
             imageByteArray.PutPixel(x, y, Color);
-            for (int i = 1; i < Thickness / 2; i++) {
+            for (int i = 1; i <= Thickness / 2; i++) {
               imageByteArray.PutPixel(x + i, y, Color);
               imageByteArray.PutPixel(x - i, y, Color);
             }
@@ -202,7 +202,7 @@ namespace rasterization {
       return element;
     }
 
-    public static new Line? FromXml(XmlElement element) {
+    public static Line? FromXml(XmlElement element) {
       if (!int.TryParse(element.GetAttribute("StartPointX"), out int startPointX)
         || !int.TryParse(element.GetAttribute("StartPointY"), out int startPointY)
         || !int.TryParse(element.GetAttribute("EndPointX"), out int endPointX)

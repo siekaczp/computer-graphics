@@ -28,13 +28,7 @@ namespace rasterization {
       shapes.Add(new Line(point2, points[0]));
     }
 
-    private Polygon(List<Line> lines) {
-      foreach (var line in lines) {
-        shapes.Add(line);
-        centerSum.X += line.GetCenter().X;
-        centerSum.Y += line.GetCenter().Y;
-      }
-    }
+    public Polygon() { }
 
     override public Shape? CheckColision(Point point) {
       foreach (var line in shapes) {
@@ -103,24 +97,21 @@ namespace rasterization {
       element.SetAttribute("CenterSumX", centerSum.X.ToString());
       element.SetAttribute("CenterSumY", centerSum.Y.ToString());
 
-      foreach (var shape in shapes) {
+      foreach (var shape in shapes)
         element.AppendChild(shape.ToXmlElement(doc));
-      }
 
       return element;
     }
 
     public static new Polygon? FromXml(XmlElement element) {
-      List<Line> lines = new();
+      Polygon polygon = new();
+      polygon.SetAttributesFromXml(element);
 
       foreach (var innerElement in element.ChildNodes) {
         Line? newLine = Line.FromXml((XmlElement) innerElement);
         if (newLine is not null)
-          lines.Add(newLine);
+          polygon.Add(newLine);
       }
-
-      Polygon polygon = new(lines);
-      polygon.SetAttributesFromXml(element);
 
       return polygon;
     }
