@@ -28,6 +28,8 @@ namespace rasterization {
       SecondPointOfBezier,
       ThirdPointOfBezier,
       FourthPointOfBezier,
+      FirstPointOfRectangle,
+      SecondPointOfRectangle,
       ShapeSelected,
       ShapeMoving,
       ShapeEditing,
@@ -81,7 +83,7 @@ namespace rasterization {
     }
 
     private void Render(Bitmap bitmap, Shape shape) {
-      Rectangle rect = new(0, 0, bitmap.Width, bitmap.Height);
+      System.Drawing.Rectangle rect = new(0, 0, bitmap.Width, bitmap.Height);
       BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
 
       IntPtr ptr = bmpData.Scan0;
@@ -210,6 +212,31 @@ namespace rasterization {
         bezierButton.Checked = false;
         break;
 
+      case State.FirstPointOfRectangle:
+        state = State.SecondPointOfRectangle;
+        newShape = new Rectangle(e.Location, e.Location);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfRectangle:
+        state = State.Idle;
+        if (newShape is null)
+          break;
+
+        (newShape as Rectangle)!.Point2 = e.Location;
+        Render(canvasBitmap, newShape);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+
+        shapes.Add(newShape);
+        newShape = null;
+
+        rectangleButton.Checked = false;
+        break;
+
       case State.Idle:
         selectedShape = shapes.CheckColision(e.Location);
         if (selectedShape is null)
@@ -304,6 +331,16 @@ namespace rasterization {
         for (int i = 1; i < tempListOfPoints.Count; i++)
           Render(tempLayerBitmap, new Line(tempListOfPoints[i - 1], tempListOfPoints[i]));
         Render(tempLayerBitmap, new Line(tempListOfPoints.Last(), e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfRectangle:
+        if (newShape is null)
+          break;
+
+        (newShape as Rectangle)!.Point2 = e.Location;
+        tempLayerGraphics.Clear(Color.Transparent);
+        Render(tempLayerBitmap, newShape);
         tempLayer.Refresh();
         break;
 
@@ -422,6 +459,7 @@ namespace rasterization {
       circleButton.Checked = false;
       polygonButton.Checked = false;
       bezierButton.Checked = false;
+      rectangleButton.Checked = false;
       ShapeEditionControlsEnabled = false;
     }
 
@@ -482,6 +520,20 @@ namespace rasterization {
 
       tempLayerGraphics.Clear(Color.Transparent);
       tempLayer.Refresh();
+    }
+
+    private void RectangleButton_Click(object sender, EventArgs e) {
+      UncheckAllButtons();
+
+      if (state == State.FirstPointOfRectangle || state == State.SecondPointOfRectangle) {
+        state = State.Idle;
+        return;
+      }
+
+      state = State.FirstPointOfRectangle;
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+      rectangleButton.Checked = true;
     }
 
     private void DeleteButton_Click(object sender, EventArgs e) {
