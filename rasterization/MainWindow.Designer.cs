@@ -40,6 +40,7 @@
       colorButton = new ToolStripButton();
       thicknessLabel = new ToolStripLabel();
       thicknessTextBox = new ToolStripTextBox();
+      bezierButton = new ToolStripButton();
       canvas = new PictureBox();
       toolStrip1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize) canvas).BeginInit();
@@ -47,7 +48,7 @@
       // 
       // toolStrip1
       // 
-      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, toolStripLabel1, lineButton, circleButton, polygonButton, toolStripSeparator2, toolStripLabel2, deleteButton, colorButton, thicknessLabel, thicknessTextBox });
+      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, toolStripLabel1, lineButton, circleButton, polygonButton, bezierButton, toolStripSeparator2, toolStripLabel2, deleteButton, colorButton, thicknessLabel, thicknessTextBox });
       toolStrip1.Location = new Point(0, 0);
       toolStrip1.Name = "toolStrip1";
       toolStrip1.Size = new Size(800, 25);
@@ -183,6 +184,16 @@
       thicknessTextBox.Text = "1";
       thicknessTextBox.TextChanged += ThicknessTextBox_TextChanged;
       // 
+      // bezierButton
+      // 
+      bezierButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      bezierButton.Image = (Image) resources.GetObject("bezierButton.Image");
+      bezierButton.ImageTransparentColor = Color.Magenta;
+      bezierButton.Name = "bezierButton";
+      bezierButton.Size = new Size(74, 22);
+      bezierButton.Text = "Bezier curve";
+      bezierButton.Click += BezierButton_Click;
+      // 
       // canvas
       // 
       canvas.Dock = DockStyle.Fill;
@@ -229,5 +240,6 @@
     private ToolStripLabel thicknessLabel;
     private PictureBox canvas;
     private ToolStripTextBox thicknessTextBox;
+    private ToolStripButton bezierButton;
   }
 }

@@ -24,6 +24,10 @@ namespace rasterization {
       FirstPointOfCircle,
       SecondPointOfCircle,
       NextPointOfPolygon,
+      FirstPointOfBezier,
+      SecondPointOfBezier,
+      ThirdPointOfBezier,
+      FourthPointOfBezier,
       ShapeSelected,
       ShapeMoving,
       ShapeEditing,
@@ -170,6 +174,42 @@ namespace rasterization {
         tempListOfPoints.Add(e.Location);
         break;
 
+      case State.FirstPointOfBezier:
+        state = State.SecondPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfBezier:
+        state = State.ThirdPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.ThirdPointOfBezier:
+        state = State.FourthPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.FourthPointOfBezier:
+        state = State.Idle;
+        tempListOfPoints.Add(e.Location);
+        BezierCurve newCurve = new(new List<Point>(tempListOfPoints));
+        shapes.Add(newCurve);
+
+        Render(canvasBitmap, newCurve);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+        tempListOfPoints.Clear();
+        bezierButton.Checked = false;
+        break;
+
       case State.Idle:
         selectedShape = shapes.CheckColision(e.Location);
         if (selectedShape is null)
@@ -182,6 +222,13 @@ namespace rasterization {
         tempLayerGraphics.Clear(Color.Transparent);
         Point center = selectedShape!.GetCenter();
         tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
+
+        if (selectedShape is BezierCurve curve) {
+          foreach (var controlPoint in curve.ControlPoints) {
+            Render(tempLayerBitmap, BezierCurve.Marker(controlPoint));
+          }
+        }
+
         tempLayer.Refresh();
         break;
 
@@ -278,6 +325,13 @@ namespace rasterization {
         Render(tempLayerBitmap, selectedShape);
         Point center = selectedShape.GetCenter();
         tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
+
+        if (selectedShape is BezierCurve curve) {
+          foreach (var controlPoint in curve.ControlPoints) {
+            Render(tempLayerBitmap, BezierCurve.Marker(controlPoint));
+          }
+        }
+
         tempLayer.Refresh();
         break;
       }
@@ -285,8 +339,9 @@ namespace rasterization {
 
     private void LoadButton_Click(object sender, EventArgs e) {
       OpenFileDialog openFileDialog = new() {
-        Filter = "XML files (*.xml)|*.xml|All files|*.*",
-        RestoreDirectory = true
+        Filter = "XML Files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true,
+        DefaultExt = "xml"
       };
 
       if (openFileDialog.ShowDialog() != DialogResult.OK)
@@ -326,8 +381,9 @@ namespace rasterization {
 
     private void SaveButton_Click(object sender, EventArgs e) {
       SaveFileDialog saveFileDialog = new() {
-        Filter = "XML files (*.xml)|*.xml|All files|*.*",
-        RestoreDirectory = true
+        Filter = "XML Files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true,
+        DefaultExt = "xml"
       };
 
       if (saveFileDialog.ShowDialog() != DialogResult.OK)
@@ -365,6 +421,7 @@ namespace rasterization {
       lineButton.Checked = false;
       circleButton.Checked = false;
       polygonButton.Checked = false;
+      bezierButton.Checked = false;
       ShapeEditionControlsEnabled = false;
     }
 
@@ -402,13 +459,29 @@ namespace rasterization {
 
       if (state == State.NextPointOfPolygon) {
         state = State.Idle;
-        return;
+      } else {
+        state = State.NextPointOfPolygon;
+        polygonButton.Checked = true;
       }
 
-      state = State.NextPointOfPolygon;
       tempLayerGraphics.Clear(Color.Transparent);
       tempLayer.Refresh();
-      polygonButton.Checked = true;
+    }
+
+    private void BezierButton_Click(object sender, EventArgs e) {
+      UncheckAllButtons();
+      tempListOfPoints.Clear();
+
+      if (state == State.FirstPointOfBezier || state == State.SecondPointOfBezier
+        || state == State.ThirdPointOfBezier || state == State.FourthPointOfBezier) {
+        state = State.Idle;
+      } else {
+        state = State.FirstPointOfBezier;
+        bezierButton.Checked = true;
+      }
+
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
     }
 
     private void DeleteButton_Click(object sender, EventArgs e) {
