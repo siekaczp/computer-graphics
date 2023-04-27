@@ -93,6 +93,8 @@ namespace rasterization {
       element.SetAttribute("Point1Y", point1.Y.ToString());
       element.SetAttribute("Point2X", point2.X.ToString());
       element.SetAttribute("Point2Y", point2.Y.ToString());
+      if (FillColor is not null)
+        element.SetAttribute("FillColor", ColorTranslator.ToHtml(FillColor.Value));
       return element;
     }
 
@@ -105,6 +107,11 @@ namespace rasterization {
 
       Rectangle newRectangle = new(new Point(point1X, point1Y), new Point(point2X, point2Y));
       newRectangle.SetAttributesFromXml(element);
+
+      string fillColor = element.GetAttribute("FillColor");
+      if (fillColor != "")
+        newRectangle.FillColor = ColorTranslator.FromHtml(fillColor);
+
       return newRectangle;
     }
   }

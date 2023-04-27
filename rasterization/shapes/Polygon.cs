@@ -2,6 +2,12 @@
 
 namespace rasterization {
   public class Polygon : CompositeShape<Line> {
+    private Color? fillColor = null;
+    public Color? FillColor {
+      get => fillColor;
+      set => fillColor = value;
+    }
+
     public Polygon(List<Point> points) {
       if (points.Count < 2)
         return;
@@ -29,6 +35,78 @@ namespace rasterization {
     }
 
     public Polygon() { }
+
+    public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
+      if (FillColor is not null)
+        Fill(imageByteArray);
+
+      foreach (var shape in shapes)
+        shape.Draw(imageByteArray, antialiasing);
+    }
+
+    private class Edge {
+      public int yMax;
+      public double x;
+      public double mInv;
+    }
+
+    private void Fill(ImageByteArray imageByteArray) {
+      Dictionary<int, List<Edge>> ET = new();
+      List<Edge> AET = new();
+
+      int minY = int.MaxValue;
+      foreach (var line in shapes) {
+        int startX = line.StartPoint.Y > line.EndPoint.Y ? line.EndPoint.X : line.StartPoint.X;
+        int endX = line.StartPoint.Y > line.EndPoint.Y ? line.StartPoint.X : line.EndPoint.X;
+        int startY = line.StartPoint.Y < line.EndPoint.Y ? line.StartPoint.Y : line.EndPoint.Y;
+        int endY = line.StartPoint.Y < line.EndPoint.Y ? line.EndPoint.Y : line.StartPoint.Y;
+
+        if (startY < minY)
+          minY = startY;
+
+        Edge edge = new() {
+          yMax = line.StartPoint.Y > line.EndPoint.Y ? line.StartPoint.Y : line.EndPoint.Y,
+          x = startX,
+          mInv = (double) (endY - startY) / (endX - startX)
+        };
+
+        if (ET.ContainsKey(startY))
+          ET[startY].Add(edge);
+        else
+          ET[startY] = new() { edge };
+      }
+
+      int y = minY;
+      while (AET.Count > 0 || ET.Count > 0) {
+        if (!ET.TryGetValue(y, out List<Edge>? tempList))
+          tempList = new();
+
+        AET.AddRange(tempList);
+        ET.Remove(y);
+        AET = AET.OrderBy(edge => edge.x).ToList();
+
+        int index = 0;
+        if (AET.Count > 0) {
+          bool fill = false;
+
+          int x = (int) AET[index].x;
+          while (index < AET.Count) {
+            if (x == (int) AET[index].x) {
+              fill = !fill;
+              index++;
+              continue;
+            }
+            x++;
+            if (fill)
+              imageByteArray.PutPixel(x, y, FillColor!.Value);
+          }
+        }
+
+        y++;
+        AET = AET.Where(edge => edge.yMax > y).ToList();
+        AET.ForEach(edge => edge.x += 1 / edge.mInv);
+      }
+    }
 
     override public Shape? CheckColision(Point point) {
       foreach (var line in shapes) {
@@ -94,6 +172,9 @@ namespace rasterization {
     public override XmlElement ToXmlElement(XmlDocument doc) {
       XmlElement element = CreateXmlElement(doc, "Polygon");
 
+      if (FillColor is not null)
+        element.SetAttribute("FillColor", ColorTranslator.ToHtml(FillColor.Value));
+
       element.SetAttribute("CenterSumX", centerSum.X.ToString());
       element.SetAttribute("CenterSumY", centerSum.Y.ToString());
 
@@ -106,6 +187,10 @@ namespace rasterization {
     public static new Polygon? FromXml(XmlElement element) {
       Polygon polygon = new();
       polygon.SetAttributesFromXml(element);
+
+      string fillColor = element.GetAttribute("FillColor");
+      if (fillColor != "")
+        polygon.FillColor = ColorTranslator.FromHtml(fillColor);
 
       foreach (var innerElement in element.ChildNodes) {
         Line? newLine = Line.FromXml((XmlElement) innerElement);

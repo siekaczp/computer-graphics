@@ -1,5 +1,4 @@
 using System.Drawing.Imaging;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Xml;
 
@@ -11,7 +10,9 @@ namespace rasterization {
       set {
         _ShapeEditionControlsEnabled = value;
         deleteButton.Enabled = value;
-        colorButton.Enabled = value;
+        edgeColorButton.Enabled = value;
+        fillColorButton.Enabled = value;
+        clearFillButton.Enabled = value;
         thicknessLabel.Enabled = value;
         thicknessTextBox.Enabled = value;
       }
@@ -552,7 +553,7 @@ namespace rasterization {
       tempLayer.Refresh();
     }
 
-    private void ColorButton_Click(object sender, EventArgs e) {
+    private void EdgeColorButton_Click(object sender, EventArgs e) {
       ColorDialog colorDialog = new() {
         Color = selectedShape?.Color ?? Color.Black,
         FullOpen = true,
@@ -566,6 +567,36 @@ namespace rasterization {
         Render(canvasBitmap, selectedShape);
         canvas.Refresh();
       }
+    }
+
+    private void FillColorButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      ColorDialog colorDialog = new() {
+        Color = (selectedShape as Polygon)!.FillColor ?? Color.Empty,
+        FullOpen = true,
+      };
+
+      if (colorDialog.ShowDialog() == DialogResult.OK) {
+        if (selectedShape == null || selectedShape is not Polygon)
+          return;
+
+        (selectedShape as Polygon)!.FillColor = colorDialog.Color;
+        canvasGraphics.Clear(Color.White);
+        Render(canvasBitmap, shapes);
+        canvas.Refresh();
+      }
+    }
+
+    private void ClearFillButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      (selectedShape as Polygon)!.FillColor = null;
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void ThicknessTextBox_TextChanged(object sender, EventArgs e) {

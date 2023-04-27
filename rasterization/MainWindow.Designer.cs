@@ -30,29 +30,31 @@
       clearButton = new ToolStripButton();
       antialiasingButton = new ToolStripButton();
       toolStripSeparator1 = new ToolStripSeparator();
-      lineButton = new ToolStripButton();
-      circleButton = new ToolStripButton();
-      polygonButton = new ToolStripButton();
-      bezierButton = new ToolStripButton();
+      drawDropdownButton = new ToolStripDropDownButton();
+      lineButton = new ToolStripMenuItem();
+      circleButton = new ToolStripMenuItem();
+      rectangleButton = new ToolStripMenuItem();
+      polygonButton = new ToolStripMenuItem();
+      bezierButton = new ToolStripMenuItem();
       toolStripSeparator2 = new ToolStripSeparator();
       deleteButton = new ToolStripButton();
-      colorButton = new ToolStripButton();
+      edgeColorButton = new ToolStripButton();
+      fillColorButton = new ToolStripButton();
       thicknessLabel = new ToolStripLabel();
       thicknessTextBox = new ToolStripTextBox();
       canvas = new PictureBox();
-      rectangleButton = new ToolStripButton();
+      clearFillButton = new ToolStripButton();
       toolStrip1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize) canvas).BeginInit();
       SuspendLayout();
       // 
       // toolStrip1
       // 
-      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, lineButton, circleButton, rectangleButton, polygonButton, bezierButton, toolStripSeparator2, deleteButton, colorButton, thicknessLabel, thicknessTextBox });
+      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, drawDropdownButton, toolStripSeparator2, deleteButton, edgeColorButton, fillColorButton, clearFillButton, thicknessLabel, thicknessTextBox });
       toolStrip1.Location = new Point(0, 0);
       toolStrip1.Name = "toolStrip1";
       toolStrip1.Size = new Size(800, 25);
       toolStrip1.TabIndex = 0;
-      toolStrip1.Text = "toolStrip1";
       // 
       // loadButton
       // 
@@ -99,43 +101,48 @@
       toolStripSeparator1.Name = "toolStripSeparator1";
       toolStripSeparator1.Size = new Size(6, 25);
       // 
+      // drawDropdownButton
+      // 
+      drawDropdownButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      drawDropdownButton.DropDownItems.AddRange(new ToolStripItem[] { lineButton, circleButton, rectangleButton, polygonButton, bezierButton });
+      drawDropdownButton.Image = (Image) resources.GetObject("drawDropdownButton.Image");
+      drawDropdownButton.ImageTransparentColor = Color.Magenta;
+      drawDropdownButton.Name = "drawDropdownButton";
+      drawDropdownButton.Size = new Size(47, 22);
+      drawDropdownButton.Text = "Draw";
+      // 
       // lineButton
       // 
-      lineButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      lineButton.Image = (Image) resources.GetObject("lineButton.Image");
-      lineButton.ImageTransparentColor = Color.Magenta;
       lineButton.Name = "lineButton";
-      lineButton.Size = new Size(33, 22);
+      lineButton.Size = new Size(137, 22);
       lineButton.Text = "Line";
       lineButton.Click += LineButton_Click;
       // 
       // circleButton
       // 
-      circleButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      circleButton.Image = (Image) resources.GetObject("circleButton.Image");
-      circleButton.ImageTransparentColor = Color.Magenta;
       circleButton.Name = "circleButton";
-      circleButton.Size = new Size(41, 22);
+      circleButton.Size = new Size(137, 22);
       circleButton.Text = "Circle";
       circleButton.Click += CircleButton_Click;
       // 
+      // rectangleButton
+      // 
+      rectangleButton.Name = "rectangleButton";
+      rectangleButton.Size = new Size(137, 22);
+      rectangleButton.Text = "Rectangle";
+      rectangleButton.Click += RectangleButton_Click;
+      // 
       // polygonButton
       // 
-      polygonButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      polygonButton.Image = (Image) resources.GetObject("polygonButton.Image");
-      polygonButton.ImageTransparentColor = Color.Magenta;
       polygonButton.Name = "polygonButton";
-      polygonButton.Size = new Size(55, 22);
+      polygonButton.Size = new Size(137, 22);
       polygonButton.Text = "Polygon";
       polygonButton.Click += PolygonButton_Click;
       // 
       // bezierButton
       // 
-      bezierButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      bezierButton.Image = (Image) resources.GetObject("bezierButton.Image");
-      bezierButton.ImageTransparentColor = Color.Magenta;
       bezierButton.Name = "bezierButton";
-      bezierButton.Size = new Size(74, 22);
+      bezierButton.Size = new Size(137, 22);
       bezierButton.Text = "Bezier curve";
       bezierButton.Click += BezierButton_Click;
       // 
@@ -155,16 +162,27 @@
       deleteButton.Text = "Delete";
       deleteButton.Click += DeleteButton_Click;
       // 
-      // colorButton
+      // edgeColorButton
       // 
-      colorButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      colorButton.Enabled = false;
-      colorButton.Image = (Image) resources.GetObject("colorButton.Image");
-      colorButton.ImageTransparentColor = Color.Magenta;
-      colorButton.Name = "colorButton";
-      colorButton.Size = new Size(40, 22);
-      colorButton.Text = "Color";
-      colorButton.Click += ColorButton_Click;
+      edgeColorButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      edgeColorButton.Enabled = false;
+      edgeColorButton.Image = (Image) resources.GetObject("edgeColorButton.Image");
+      edgeColorButton.ImageTransparentColor = Color.Magenta;
+      edgeColorButton.Name = "edgeColorButton";
+      edgeColorButton.Size = new Size(67, 22);
+      edgeColorButton.Text = "Edge color";
+      edgeColorButton.Click += EdgeColorButton_Click;
+      // 
+      // fillColorButton
+      // 
+      fillColorButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      fillColorButton.Enabled = false;
+      fillColorButton.Image = (Image) resources.GetObject("fillColorButton.Image");
+      fillColorButton.ImageTransparentColor = Color.Magenta;
+      fillColorButton.Name = "fillColorButton";
+      fillColorButton.Size = new Size(56, 22);
+      fillColorButton.Text = "Fill color";
+      fillColorButton.Click += FillColorButton_Click;
       // 
       // thicknessLabel
       // 
@@ -177,7 +195,7 @@
       // 
       thicknessTextBox.Enabled = false;
       thicknessTextBox.Name = "thicknessTextBox";
-      thicknessTextBox.Size = new Size(100, 25);
+      thicknessTextBox.Size = new Size(50, 25);
       thicknessTextBox.Text = "1";
       thicknessTextBox.TextChanged += ThicknessTextBox_TextChanged;
       // 
@@ -191,15 +209,16 @@
       canvas.TabStop = false;
       canvas.MouseClick += Canvas_MouseClick;
       // 
-      // rectangleButton
+      // clearFillButton
       // 
-      rectangleButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      rectangleButton.Image = (Image) resources.GetObject("rectangleButton.Image");
-      rectangleButton.ImageTransparentColor = Color.Magenta;
-      rectangleButton.Name = "rectangleButton";
-      rectangleButton.Size = new Size(63, 22);
-      rectangleButton.Text = "Rectangle";
-      rectangleButton.Click += RectangleButton_Click;
+      clearFillButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      clearFillButton.Enabled = false;
+      clearFillButton.Image = (Image) resources.GetObject("clearFillButton.Image");
+      clearFillButton.ImageTransparentColor = Color.Magenta;
+      clearFillButton.Name = "clearFillButton";
+      clearFillButton.Size = new Size(54, 22);
+      clearFillButton.Text = "Clear fill";
+      clearFillButton.Click += ClearFillButton_Click;
       // 
       // MainWindow
       // 
@@ -226,16 +245,20 @@
     private ToolStripButton clearButton;
     private ToolStripButton antialiasingButton;
     private ToolStripSeparator toolStripSeparator1;
-    private ToolStripButton lineButton;
-    private ToolStripButton circleButton;
-    private ToolStripButton polygonButton;
     private ToolStripSeparator toolStripSeparator2;
     private ToolStripButton deleteButton;
-    private ToolStripButton colorButton;
+    private ToolStripButton edgeColorButton;
     private ToolStripLabel thicknessLabel;
     private PictureBox canvas;
     private ToolStripTextBox thicknessTextBox;
-    private ToolStripButton bezierButton;
-    private ToolStripButton rectangleButton;
+    private ToolStripButton fillColorButton;
+    private ToolStripSplitButton addButton;
+    private ToolStripDropDownButton drawDropdownButton;
+    private ToolStripMenuItem lineButton;
+    private ToolStripMenuItem circleButton;
+    private ToolStripMenuItem rectangleButton;
+    private ToolStripMenuItem polygonButton;
+    private ToolStripMenuItem bezierButton;
+    private ToolStripButton clearFillButton;
   }
 }
