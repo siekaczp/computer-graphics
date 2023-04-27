@@ -1,8 +1,11 @@
-﻿using System.Xml;
+﻿using System.Collections.ObjectModel;
+using System.Xml;
 
 namespace rasterization {
   public class CompositeShape<T> : Shape where T : Shape {
     protected readonly List<T> shapes = new();
+    public ReadOnlyCollection<T> Shapes => shapes.AsReadOnly();
+
     private Color _color;
     public override Color Color {
       get => _color;

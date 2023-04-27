@@ -25,11 +25,7 @@
     private void InitializeComponent() {
       System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
       toolStrip1 = new ToolStrip();
-      loadButton = new ToolStripButton();
-      saveButton = new ToolStripButton();
-      clearButton = new ToolStripButton();
       antialiasingButton = new ToolStripButton();
-      toolStripSeparator1 = new ToolStripSeparator();
       drawDropdownButton = new ToolStripDropDownButton();
       lineButton = new ToolStripMenuItem();
       circleButton = new ToolStripMenuItem();
@@ -40,52 +36,27 @@
       deleteButton = new ToolStripButton();
       edgeColorButton = new ToolStripButton();
       fillColorButton = new ToolStripButton();
+      fillImageButton = new ToolStripButton();
       clearFillButton = new ToolStripButton();
       thicknessLabel = new ToolStripLabel();
       thicknessTextBox = new ToolStripTextBox();
       canvas = new PictureBox();
-      fillImageButton = new ToolStripButton();
+      fileDropdownButton = new ToolStripDropDownButton();
+      loadButton = new ToolStripMenuItem();
+      saveButton = new ToolStripMenuItem();
+      clearButton = new ToolStripMenuItem();
+      clipButton = new ToolStripButton();
       toolStrip1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize) canvas).BeginInit();
       SuspendLayout();
       // 
       // toolStrip1
       // 
-      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, drawDropdownButton, toolStripSeparator2, deleteButton, edgeColorButton, fillColorButton, fillImageButton, clearFillButton, thicknessLabel, thicknessTextBox });
+      toolStrip1.Items.AddRange(new ToolStripItem[] { fileDropdownButton, drawDropdownButton, antialiasingButton, toolStripSeparator2, deleteButton, edgeColorButton, fillColorButton, fillImageButton, clearFillButton, thicknessLabel, thicknessTextBox, clipButton });
       toolStrip1.Location = new Point(0, 0);
       toolStrip1.Name = "toolStrip1";
       toolStrip1.Size = new Size(800, 25);
       toolStrip1.TabIndex = 0;
-      // 
-      // loadButton
-      // 
-      loadButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      loadButton.Image = (Image) resources.GetObject("loadButton.Image");
-      loadButton.ImageTransparentColor = Color.Magenta;
-      loadButton.Name = "loadButton";
-      loadButton.Size = new Size(37, 22);
-      loadButton.Text = "Load";
-      loadButton.Click += LoadButton_Click;
-      // 
-      // saveButton
-      // 
-      saveButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      saveButton.Image = (Image) resources.GetObject("saveButton.Image");
-      saveButton.ImageTransparentColor = Color.Magenta;
-      saveButton.Name = "saveButton";
-      saveButton.Size = new Size(35, 22);
-      saveButton.Text = "Save";
-      saveButton.Click += SaveButton_Click;
-      // 
-      // clearButton
-      // 
-      clearButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      clearButton.Image = (Image) resources.GetObject("clearButton.Image");
-      clearButton.ImageTransparentColor = Color.Magenta;
-      clearButton.Name = "clearButton";
-      clearButton.Size = new Size(38, 22);
-      clearButton.Text = "Clear";
-      clearButton.Click += ClearButton_Click;
       // 
       // antialiasingButton
       // 
@@ -96,11 +67,6 @@
       antialiasingButton.Size = new Size(120, 22);
       antialiasingButton.Text = "Turn on anti-aliasing";
       antialiasingButton.Click += AntialiasingButton_Click;
-      // 
-      // toolStripSeparator1
-      // 
-      toolStripSeparator1.Name = "toolStripSeparator1";
-      toolStripSeparator1.Size = new Size(6, 25);
       // 
       // drawDropdownButton
       // 
@@ -185,6 +151,17 @@
       fillColorButton.Text = "Fill color";
       fillColorButton.Click += FillColorButton_Click;
       // 
+      // fillImageButton
+      // 
+      fillImageButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      fillImageButton.Enabled = false;
+      fillImageButton.Image = (Image) resources.GetObject("fillImageButton.Image");
+      fillImageButton.ImageTransparentColor = Color.Magenta;
+      fillImageButton.Name = "fillImageButton";
+      fillImageButton.Size = new Size(88, 22);
+      fillImageButton.Text = "Fill with image";
+      fillImageButton.Click += FillImageButton_Click;
+      // 
       // clearFillButton
       // 
       clearFillButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
@@ -221,16 +198,47 @@
       canvas.TabStop = false;
       canvas.MouseClick += Canvas_MouseClick;
       // 
-      // fillImageButton
+      // fileDropdownButton
       // 
-      fillImageButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      fillImageButton.Enabled = false;
-      fillImageButton.Image = (Image) resources.GetObject("fillImageButton.Image");
-      fillImageButton.ImageTransparentColor = Color.Magenta;
-      fillImageButton.Name = "fillImageButton";
-      fillImageButton.Size = new Size(88, 22);
-      fillImageButton.Text = "Fill with image";
-      fillImageButton.Click += FillImageButton_Click;
+      fileDropdownButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      fileDropdownButton.DropDownItems.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton });
+      fileDropdownButton.Image = (Image) resources.GetObject("fileDropdownButton.Image");
+      fileDropdownButton.ImageTransparentColor = Color.Magenta;
+      fileDropdownButton.Name = "fileDropdownButton";
+      fileDropdownButton.Size = new Size(38, 22);
+      fileDropdownButton.Text = "File";
+      // 
+      // loadButton
+      // 
+      loadButton.Name = "loadButton";
+      loadButton.Size = new Size(180, 22);
+      loadButton.Text = "Load";
+      loadButton.Click += LoadButton_Click;
+      // 
+      // saveButton
+      // 
+      saveButton.Name = "saveButton";
+      saveButton.Size = new Size(180, 22);
+      saveButton.Text = "Save";
+      saveButton.Click += SaveButton_Click;
+      // 
+      // clearButton
+      // 
+      clearButton.Name = "clearButton";
+      clearButton.Size = new Size(180, 22);
+      clearButton.Text = "Clear";
+      clearButton.Click += ClearButton_Click;
+      // 
+      // clipButton
+      // 
+      clipButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      clipButton.Enabled = false;
+      clipButton.Image = (Image) resources.GetObject("clipButton.Image");
+      clipButton.ImageTransparentColor = Color.Magenta;
+      clipButton.Name = "clipButton";
+      clipButton.Size = new Size(97, 22);
+      clipButton.Text = "Choose clipping";
+      clipButton.Click += ClipButton_Click;
       // 
       // MainWindow
       // 
@@ -252,11 +260,7 @@
     #endregion
 
     private ToolStrip toolStrip1;
-    private ToolStripButton loadButton;
-    private ToolStripButton saveButton;
-    private ToolStripButton clearButton;
     private ToolStripButton antialiasingButton;
-    private ToolStripSeparator toolStripSeparator1;
     private ToolStripSeparator toolStripSeparator2;
     private ToolStripButton deleteButton;
     private ToolStripButton edgeColorButton;
@@ -273,5 +277,10 @@
     private ToolStripMenuItem bezierButton;
     private ToolStripButton clearFillButton;
     private ToolStripButton fillImageButton;
+    private ToolStripDropDownButton fileDropdownButton;
+    private ToolStripMenuItem loadButton;
+    private ToolStripMenuItem saveButton;
+    private ToolStripMenuItem clearButton;
+    private ToolStripButton clipButton;
   }
 }

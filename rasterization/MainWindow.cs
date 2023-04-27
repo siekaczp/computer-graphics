@@ -10,13 +10,14 @@ namespace rasterization {
       get { return _ShapeEditionControlsEnabled; }
       set {
         _ShapeEditionControlsEnabled = value;
-        deleteButton.Enabled = value;
-        edgeColorButton.Enabled = value;
-        fillColorButton.Enabled = value;
-        fillImageButton.Enabled = value;
-        clearFillButton.Enabled = value;
-        thicknessLabel.Enabled = value;
-        thicknessTextBox.Enabled = value;
+        deleteButton.Enabled = value && selectedShape is not null;
+        edgeColorButton.Enabled = value && selectedShape is not null;
+        fillColorButton.Enabled = value && selectedShape is not null and Polygon;
+        fillImageButton.Enabled = value && selectedShape is not null and Polygon;
+        clearFillButton.Enabled = value && selectedShape is not null and Polygon;
+        thicknessLabel.Enabled = value && selectedShape is not null and not Circle;
+        thicknessTextBox.Enabled = value && selectedShape is not null and not Circle;
+        clipButton.Enabled = value && selectedShape is not null and Polygon;
       }
     }
 
@@ -36,6 +37,7 @@ namespace rasterization {
       ShapeSelected,
       ShapeMoving,
       ShapeEditing,
+      ChoosingClip,
     }
 
     private readonly Image moveIcon = Image.FromFile("move_icon.png");
@@ -258,6 +260,21 @@ namespace rasterization {
         tempLayerGraphics.Clear(Color.Transparent);
         tempLayer.Refresh();
         break;
+
+      case State.ChoosingClip:
+        Shape? clickedShape = shapes.CheckColision(e.Location);
+        state = State.Idle;
+        clipButton.Checked = false;
+        (selectedShape as Polygon)!.ClippingRectangle = clickedShape is not null and Rectangle ? (Rectangle) clickedShape : null;
+        selectedShape = null;
+        ShapeEditionControlsEnabled = false;
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+        canvasGraphics.Clear(Color.White);
+        Render(canvasBitmap, shapes);
+        canvas.Refresh();
+        break;
       }
     }
 
@@ -360,6 +377,13 @@ namespace rasterization {
             Render(tempLayerBitmap, BezierCurve.Marker(controlPoint));
           }
         }
+
+        canvasGraphics.Clear(Color.White);
+        foreach (var shape in shapes.Shapes) {
+          if (shape != selectedShape)
+            Render(canvasBitmap, shape);
+        }
+        canvas.Refresh();
 
         tempLayer.Refresh();
         break;
@@ -627,6 +651,20 @@ namespace rasterization {
         Render(canvasBitmap, selectedShape);
       }
       canvas.Refresh();
+    }
+
+    private void ClipButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      if (state == State.ShapeSelected) {
+        state = State.ChoosingClip;
+        clipButton.Checked = true;
+        return;
+      }
+
+      state = State.ShapeSelected;
+      clipButton.Checked = false;
     }
 
     private void MainWindow_FormClosed(object sender, FormClosedEventArgs e) {
