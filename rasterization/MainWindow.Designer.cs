@@ -40,17 +40,18 @@
       deleteButton = new ToolStripButton();
       edgeColorButton = new ToolStripButton();
       fillColorButton = new ToolStripButton();
+      clearFillButton = new ToolStripButton();
       thicknessLabel = new ToolStripLabel();
       thicknessTextBox = new ToolStripTextBox();
       canvas = new PictureBox();
-      clearFillButton = new ToolStripButton();
+      fillImageButton = new ToolStripButton();
       toolStrip1.SuspendLayout();
       ((System.ComponentModel.ISupportInitialize) canvas).BeginInit();
       SuspendLayout();
       // 
       // toolStrip1
       // 
-      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, drawDropdownButton, toolStripSeparator2, deleteButton, edgeColorButton, fillColorButton, clearFillButton, thicknessLabel, thicknessTextBox });
+      toolStrip1.Items.AddRange(new ToolStripItem[] { loadButton, saveButton, clearButton, antialiasingButton, toolStripSeparator1, drawDropdownButton, toolStripSeparator2, deleteButton, edgeColorButton, fillColorButton, fillImageButton, clearFillButton, thicknessLabel, thicknessTextBox });
       toolStrip1.Location = new Point(0, 0);
       toolStrip1.Name = "toolStrip1";
       toolStrip1.Size = new Size(800, 25);
@@ -184,6 +185,17 @@
       fillColorButton.Text = "Fill color";
       fillColorButton.Click += FillColorButton_Click;
       // 
+      // clearFillButton
+      // 
+      clearFillButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      clearFillButton.Enabled = false;
+      clearFillButton.Image = (Image) resources.GetObject("clearFillButton.Image");
+      clearFillButton.ImageTransparentColor = Color.Magenta;
+      clearFillButton.Name = "clearFillButton";
+      clearFillButton.Size = new Size(54, 22);
+      clearFillButton.Text = "Clear fill";
+      clearFillButton.Click += ClearFillButton_Click;
+      // 
       // thicknessLabel
       // 
       thicknessLabel.Enabled = false;
@@ -209,16 +221,16 @@
       canvas.TabStop = false;
       canvas.MouseClick += Canvas_MouseClick;
       // 
-      // clearFillButton
+      // fillImageButton
       // 
-      clearFillButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-      clearFillButton.Enabled = false;
-      clearFillButton.Image = (Image) resources.GetObject("clearFillButton.Image");
-      clearFillButton.ImageTransparentColor = Color.Magenta;
-      clearFillButton.Name = "clearFillButton";
-      clearFillButton.Size = new Size(54, 22);
-      clearFillButton.Text = "Clear fill";
-      clearFillButton.Click += ClearFillButton_Click;
+      fillImageButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
+      fillImageButton.Enabled = false;
+      fillImageButton.Image = (Image) resources.GetObject("fillImageButton.Image");
+      fillImageButton.ImageTransparentColor = Color.Magenta;
+      fillImageButton.Name = "fillImageButton";
+      fillImageButton.Size = new Size(88, 22);
+      fillImageButton.Text = "Fill with image";
+      fillImageButton.Click += FillImageButton_Click;
       // 
       // MainWindow
       // 
@@ -260,5 +272,6 @@
     private ToolStripMenuItem polygonButton;
     private ToolStripMenuItem bezierButton;
     private ToolStripButton clearFillButton;
+    private ToolStripButton fillImageButton;
   }
 }

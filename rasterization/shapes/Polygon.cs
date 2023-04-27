@@ -3,10 +3,7 @@
 namespace rasterization {
   public class Polygon : CompositeShape<Line> {
     private Color? fillColor = null;
-    public Color? FillColor {
-      get => fillColor;
-      set => fillColor = value;
-    }
+    private ImageByteArray? fillImage = null;
 
     public Polygon(List<Point> points) {
       if (points.Count < 2)
@@ -37,11 +34,28 @@ namespace rasterization {
     public Polygon() { }
 
     public override void Draw(ImageByteArray imageByteArray, bool antialiasing) {
-      if (FillColor is not null)
+      if (fillColor is not null || fillImage is not null)
         Fill(imageByteArray);
 
       foreach (var shape in shapes)
         shape.Draw(imageByteArray, antialiasing);
+    }
+
+    public Color? GetFillColor() => fillColor;
+
+    public void SetFill(Color color) {
+      ClearFill();
+      fillColor = color;
+    }
+
+    public void SetFill(Bitmap image) {
+      ClearFill();
+      fillImage = new ImageByteArray(image);
+    }
+
+    public void ClearFill() {
+      fillImage = null;
+      fillColor = null;
     }
 
     private class Edge {
@@ -54,13 +68,17 @@ namespace rasterization {
       Dictionary<int, List<Edge>> ET = new();
       List<Edge> AET = new();
 
+      int minX = int.MaxValue;
       int minY = int.MaxValue;
+
       foreach (var line in shapes) {
         int startX = line.StartPoint.Y > line.EndPoint.Y ? line.EndPoint.X : line.StartPoint.X;
         int endX = line.StartPoint.Y > line.EndPoint.Y ? line.StartPoint.X : line.EndPoint.X;
         int startY = line.StartPoint.Y < line.EndPoint.Y ? line.StartPoint.Y : line.EndPoint.Y;
         int endY = line.StartPoint.Y < line.EndPoint.Y ? line.EndPoint.Y : line.StartPoint.Y;
 
+        if (startX < minX)
+          minX = startX;
         if (startY < minY)
           minY = startY;
 
@@ -97,8 +115,14 @@ namespace rasterization {
               continue;
             }
             x++;
-            if (fill)
-              imageByteArray.PutPixel(x, y, FillColor!.Value);
+
+            if (fill) {
+              imageByteArray.PutPixel(x, y,
+                fillImage is not null
+                ? fillImage.GetPixel((x - minX) % fillImage.Width, (y - minY) % fillImage.Height)
+                : (fillColor ?? Color.Transparent)
+              );
+            }
           }
         }
 
@@ -169,12 +193,34 @@ namespace rasterization {
       return true;
     }
 
+    protected void SerializeFill(XmlDocument doc, XmlElement element) {
+      if (fillColor is not null) {
+        element.SetAttribute("FillColor", ColorTranslator.ToHtml(fillColor.Value));
+        return;
+      }
+
+      if (fillImage is not null) {
+        element.AppendChild(fillImage.ToXmlElement(doc));
+      }
+    }
+
+    protected void DeserializeFill(XmlElement element) {
+      string color = element.GetAttribute("FillColor");
+      if (color != "") {
+        fillColor = ColorTranslator.FromHtml(color);
+        return;
+      }
+
+      XmlNode? childElement = element.FirstChild;
+      if (childElement is not null) {
+        fillImage = ImageByteArray.FromXml((XmlElement) childElement);
+      }
+    }
+
     public override XmlElement ToXmlElement(XmlDocument doc) {
       XmlElement element = CreateXmlElement(doc, "Polygon");
 
-      if (FillColor is not null)
-        element.SetAttribute("FillColor", ColorTranslator.ToHtml(FillColor.Value));
-
+      SerializeFill(doc, element);
       element.SetAttribute("CenterSumX", centerSum.X.ToString());
       element.SetAttribute("CenterSumY", centerSum.Y.ToString());
 
@@ -187,10 +233,7 @@ namespace rasterization {
     public static new Polygon? FromXml(XmlElement element) {
       Polygon polygon = new();
       polygon.SetAttributesFromXml(element);
-
-      string fillColor = element.GetAttribute("FillColor");
-      if (fillColor != "")
-        polygon.FillColor = ColorTranslator.FromHtml(fillColor);
+      polygon.DeserializeFill(element);
 
       foreach (var innerElement in element.ChildNodes) {
         Line? newLine = Line.FromXml((XmlElement) innerElement);

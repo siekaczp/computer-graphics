@@ -1,5 +1,6 @@
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using System.Xml;
 
 namespace rasterization {
@@ -12,6 +13,7 @@ namespace rasterization {
         deleteButton.Enabled = value;
         edgeColorButton.Enabled = value;
         fillColorButton.Enabled = value;
+        fillImageButton.Enabled = value;
         clearFillButton.Enabled = value;
         thicknessLabel.Enabled = value;
         thicknessTextBox.Enabled = value;
@@ -84,20 +86,9 @@ namespace rasterization {
     }
 
     private void Render(Bitmap bitmap, Shape shape) {
-      System.Drawing.Rectangle rect = new(0, 0, bitmap.Width, bitmap.Height);
-      BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
-
-      IntPtr ptr = bmpData.Scan0;
-      int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
-      byte[] rgbValues = new byte[bytes];
-      Marshal.Copy(ptr, rgbValues, 0, bytes);
-
-      shape.Draw(new ImageByteArray() {
-        RgbValues = rgbValues, Width = bitmap.Width, Height = bitmap.Height, Stride = bmpData.Stride
-      }, Antialiasing);
-
-      Marshal.Copy(rgbValues, 0, ptr, bytes);
-      bitmap.UnlockBits(bmpData);
+      ImageByteArray byteArray = new(bitmap);
+      shape.Draw(byteArray, Antialiasing);
+      byteArray.FillBitmap(bitmap);
     }
 
     private void Canvas_MouseClick(object? sender, MouseEventArgs e) {
@@ -574,26 +565,45 @@ namespace rasterization {
         return;
 
       ColorDialog colorDialog = new() {
-        Color = (selectedShape as Polygon)!.FillColor ?? Color.Empty,
+        Color = (selectedShape as Polygon)!.GetFillColor() ?? Color.White,
         FullOpen = true,
       };
 
-      if (colorDialog.ShowDialog() == DialogResult.OK) {
-        if (selectedShape == null || selectedShape is not Polygon)
-          return;
+      if (colorDialog.ShowDialog() != DialogResult.OK)
+        return;
 
-        (selectedShape as Polygon)!.FillColor = colorDialog.Color;
-        canvasGraphics.Clear(Color.White);
-        Render(canvasBitmap, shapes);
-        canvas.Refresh();
-      }
+      (selectedShape as Polygon)!.SetFill(colorDialog.Color);
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
+    }
+
+    private void FillImageButton_Click(object sender, EventArgs e) {
+      if (selectedShape == null || selectedShape is not Polygon)
+        return;
+
+      OpenFileDialog openFileDialog = new() {
+        Filter = "Image Files (JPG,PNG,GIF)|*.JPG;*.PNG;*.GIF",
+        RestoreDirectory = true
+      };
+
+      if (openFileDialog.ShowDialog() != DialogResult.OK)
+        return;
+
+      using Bitmap image = new(openFileDialog.FileName);
+      using Bitmap convertedImage = image.Clone(new System.Drawing.Rectangle(0, 0, image.Width, image.Height), PixelFormat.Format32bppArgb);
+      (selectedShape as Polygon)!.SetFill(convertedImage);
+
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void ClearFillButton_Click(object sender, EventArgs e) {
       if (selectedShape is null || selectedShape is not Polygon)
         return;
 
-      (selectedShape as Polygon)!.FillColor = null;
+      (selectedShape as Polygon)!.ClearFill();
       canvasGraphics.Clear(Color.White);
       Render(canvasBitmap, shapes);
       canvas.Refresh();
