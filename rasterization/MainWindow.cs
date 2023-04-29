@@ -1,6 +1,6 @@
 using System.Drawing.Imaging;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using System.Xml;
 
 namespace rasterization {
@@ -10,10 +10,14 @@ namespace rasterization {
       get { return _ShapeEditionControlsEnabled; }
       set {
         _ShapeEditionControlsEnabled = value;
-        deleteButton.Enabled = value;
-        colorButton.Enabled = value;
-        thicknessLabel.Enabled = value;
-        thicknessTextBox.Enabled = value;
+        deleteButton.Enabled = value && selectedShape is not null;
+        edgeColorButton.Enabled = value && selectedShape is not null;
+        fillColorButton.Enabled = value && selectedShape is not null and Polygon;
+        fillImageButton.Enabled = value && selectedShape is not null and Polygon;
+        clearFillButton.Enabled = value && selectedShape is not null and Polygon;
+        thicknessLabel.Enabled = value && selectedShape is not null and not Circle;
+        thicknessTextBox.Enabled = value && selectedShape is not null and not Circle;
+        clipButton.Enabled = value && selectedShape is not null and Polygon;
       }
     }
 
@@ -24,9 +28,16 @@ namespace rasterization {
       FirstPointOfCircle,
       SecondPointOfCircle,
       NextPointOfPolygon,
+      FirstPointOfBezier,
+      SecondPointOfBezier,
+      ThirdPointOfBezier,
+      FourthPointOfBezier,
+      FirstPointOfRectangle,
+      SecondPointOfRectangle,
       ShapeSelected,
       ShapeMoving,
       ShapeEditing,
+      ChoosingClip,
     }
 
     private readonly Image moveIcon = Image.FromFile("move_icon.png");
@@ -77,20 +88,9 @@ namespace rasterization {
     }
 
     private void Render(Bitmap bitmap, Shape shape) {
-      Rectangle rect = new(0, 0, bitmap.Width, bitmap.Height);
-      BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
-
-      IntPtr ptr = bmpData.Scan0;
-      int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
-      byte[] rgbValues = new byte[bytes];
-      Marshal.Copy(ptr, rgbValues, 0, bytes);
-
-      shape.Draw(new ImageByteArray() {
-        RgbValues = rgbValues, Width = bitmap.Width, Height = bitmap.Height, Stride = bmpData.Stride
-      }, Antialiasing);
-
-      Marshal.Copy(rgbValues, 0, ptr, bytes);
-      bitmap.UnlockBits(bmpData);
+      ImageByteArray byteArray = new(bitmap);
+      shape.Draw(byteArray, Antialiasing);
+      byteArray.FillBitmap(bitmap);
     }
 
     private void Canvas_MouseClick(object? sender, MouseEventArgs e) {
@@ -170,6 +170,67 @@ namespace rasterization {
         tempListOfPoints.Add(e.Location);
         break;
 
+      case State.FirstPointOfBezier:
+        state = State.SecondPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfBezier:
+        state = State.ThirdPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.ThirdPointOfBezier:
+        state = State.FourthPointOfBezier;
+        tempListOfPoints.Add(e.Location);
+        Render(tempLayerBitmap, BezierCurve.Marker(e.Location));
+        tempLayer.Refresh();
+        break;
+
+      case State.FourthPointOfBezier:
+        state = State.Idle;
+        tempListOfPoints.Add(e.Location);
+        BezierCurve newCurve = new(new List<Point>(tempListOfPoints));
+        shapes.Add(newCurve);
+
+        Render(canvasBitmap, newCurve);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+        tempListOfPoints.Clear();
+        bezierButton.Checked = false;
+        break;
+
+      case State.FirstPointOfRectangle:
+        state = State.SecondPointOfRectangle;
+        newShape = new Rectangle(e.Location, e.Location);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
+        break;
+
+      case State.SecondPointOfRectangle:
+        state = State.Idle;
+        if (newShape is null)
+          break;
+
+        (newShape as Rectangle)!.Point2 = e.Location;
+        Render(canvasBitmap, newShape);
+        canvas.Refresh();
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+
+        shapes.Add(newShape);
+        newShape = null;
+
+        rectangleButton.Checked = false;
+        break;
+
       case State.Idle:
         selectedShape = shapes.CheckColision(e.Location);
         if (selectedShape is null)
@@ -182,6 +243,13 @@ namespace rasterization {
         tempLayerGraphics.Clear(Color.Transparent);
         Point center = selectedShape!.GetCenter();
         tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
+
+        if (selectedShape is BezierCurve curve) {
+          foreach (var controlPoint in curve.ControlPoints) {
+            Render(tempLayerBitmap, BezierCurve.Marker(controlPoint));
+          }
+        }
+
         tempLayer.Refresh();
         break;
 
@@ -191,6 +259,21 @@ namespace rasterization {
         ShapeEditionControlsEnabled = false;
         tempLayerGraphics.Clear(Color.Transparent);
         tempLayer.Refresh();
+        break;
+
+      case State.ChoosingClip:
+        Shape? clickedShape = shapes.CheckColision(e.Location);
+        state = State.Idle;
+        clipButton.Checked = false;
+        (selectedShape as Polygon)!.ClippingRectangle = clickedShape is not null and Rectangle ? (Rectangle) clickedShape : null;
+        selectedShape = null;
+        ShapeEditionControlsEnabled = false;
+
+        tempLayerGraphics.Clear(Color.Transparent);
+        tempLayer.Refresh();
+        canvasGraphics.Clear(Color.White);
+        Render(canvasBitmap, shapes);
+        canvas.Refresh();
         break;
       }
     }
@@ -260,6 +343,16 @@ namespace rasterization {
         tempLayer.Refresh();
         break;
 
+      case State.SecondPointOfRectangle:
+        if (newShape is null)
+          break;
+
+        (newShape as Rectangle)!.Point2 = e.Location;
+        tempLayerGraphics.Clear(Color.Transparent);
+        Render(tempLayerBitmap, newShape);
+        tempLayer.Refresh();
+        break;
+
       case State.ShapeMoving:
       case State.ShapeEditing:
         int dx = e.Location.X - lastPosition.X;
@@ -278,6 +371,20 @@ namespace rasterization {
         Render(tempLayerBitmap, selectedShape);
         Point center = selectedShape.GetCenter();
         tempLayerGraphics.DrawImage(moveIcon, center.X - moveIconSize, center.Y - moveIconSize);
+
+        if (selectedShape is BezierCurve curve) {
+          foreach (var controlPoint in curve.ControlPoints) {
+            Render(tempLayerBitmap, BezierCurve.Marker(controlPoint));
+          }
+        }
+
+        canvasGraphics.Clear(Color.White);
+        foreach (var shape in shapes.Shapes) {
+          if (shape != selectedShape)
+            Render(canvasBitmap, shape);
+        }
+        canvas.Refresh();
+
         tempLayer.Refresh();
         break;
       }
@@ -285,8 +392,9 @@ namespace rasterization {
 
     private void LoadButton_Click(object sender, EventArgs e) {
       OpenFileDialog openFileDialog = new() {
-        Filter = "XML files (*.xml)|*.xml|All files|*.*",
-        RestoreDirectory = true
+        Filter = "XML Files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true,
+        DefaultExt = "xml"
       };
 
       if (openFileDialog.ShowDialog() != DialogResult.OK)
@@ -326,8 +434,9 @@ namespace rasterization {
 
     private void SaveButton_Click(object sender, EventArgs e) {
       SaveFileDialog saveFileDialog = new() {
-        Filter = "XML files (*.xml)|*.xml|All files|*.*",
-        RestoreDirectory = true
+        Filter = "XML Files (*.xml)|*.xml|All files|*.*",
+        RestoreDirectory = true,
+        DefaultExt = "xml"
       };
 
       if (saveFileDialog.ShowDialog() != DialogResult.OK)
@@ -365,6 +474,8 @@ namespace rasterization {
       lineButton.Checked = false;
       circleButton.Checked = false;
       polygonButton.Checked = false;
+      bezierButton.Checked = false;
+      rectangleButton.Checked = false;
       ShapeEditionControlsEnabled = false;
     }
 
@@ -402,13 +513,43 @@ namespace rasterization {
 
       if (state == State.NextPointOfPolygon) {
         state = State.Idle;
+      } else {
+        state = State.NextPointOfPolygon;
+        polygonButton.Checked = true;
+      }
+
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+    }
+
+    private void BezierButton_Click(object sender, EventArgs e) {
+      UncheckAllButtons();
+      tempListOfPoints.Clear();
+
+      if (state == State.FirstPointOfBezier || state == State.SecondPointOfBezier
+        || state == State.ThirdPointOfBezier || state == State.FourthPointOfBezier) {
+        state = State.Idle;
+      } else {
+        state = State.FirstPointOfBezier;
+        bezierButton.Checked = true;
+      }
+
+      tempLayerGraphics.Clear(Color.Transparent);
+      tempLayer.Refresh();
+    }
+
+    private void RectangleButton_Click(object sender, EventArgs e) {
+      UncheckAllButtons();
+
+      if (state == State.FirstPointOfRectangle || state == State.SecondPointOfRectangle) {
+        state = State.Idle;
         return;
       }
 
-      state = State.NextPointOfPolygon;
+      state = State.FirstPointOfRectangle;
       tempLayerGraphics.Clear(Color.Transparent);
       tempLayer.Refresh();
-      polygonButton.Checked = true;
+      rectangleButton.Checked = true;
     }
 
     private void DeleteButton_Click(object sender, EventArgs e) {
@@ -427,7 +568,7 @@ namespace rasterization {
       tempLayer.Refresh();
     }
 
-    private void ColorButton_Click(object sender, EventArgs e) {
+    private void EdgeColorButton_Click(object sender, EventArgs e) {
       ColorDialog colorDialog = new() {
         Color = selectedShape?.Color ?? Color.Black,
         FullOpen = true,
@@ -441,6 +582,55 @@ namespace rasterization {
         Render(canvasBitmap, selectedShape);
         canvas.Refresh();
       }
+    }
+
+    private void FillColorButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      ColorDialog colorDialog = new() {
+        Color = (selectedShape as Polygon)!.GetFillColor() ?? Color.White,
+        FullOpen = true,
+      };
+
+      if (colorDialog.ShowDialog() != DialogResult.OK)
+        return;
+
+      (selectedShape as Polygon)!.SetFill(colorDialog.Color);
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
+    }
+
+    private void FillImageButton_Click(object sender, EventArgs e) {
+      if (selectedShape == null || selectedShape is not Polygon)
+        return;
+
+      OpenFileDialog openFileDialog = new() {
+        Filter = "Image Files (JPG,PNG,GIF)|*.JPG;*.PNG;*.GIF",
+        RestoreDirectory = true
+      };
+
+      if (openFileDialog.ShowDialog() != DialogResult.OK)
+        return;
+
+      using Bitmap image = new(openFileDialog.FileName);
+      using Bitmap convertedImage = image.Clone(new System.Drawing.Rectangle(0, 0, image.Width, image.Height), PixelFormat.Format32bppArgb);
+      (selectedShape as Polygon)!.SetFill(convertedImage);
+
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
+    }
+
+    private void ClearFillButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      (selectedShape as Polygon)!.ClearFill();
+      canvasGraphics.Clear(Color.White);
+      Render(canvasBitmap, shapes);
+      canvas.Refresh();
     }
 
     private void ThicknessTextBox_TextChanged(object sender, EventArgs e) {
@@ -461,6 +651,20 @@ namespace rasterization {
         Render(canvasBitmap, selectedShape);
       }
       canvas.Refresh();
+    }
+
+    private void ClipButton_Click(object sender, EventArgs e) {
+      if (selectedShape is null || selectedShape is not Polygon)
+        return;
+
+      if (state == State.ShapeSelected) {
+        state = State.ChoosingClip;
+        clipButton.Checked = true;
+        return;
+      }
+
+      state = State.ShapeSelected;
+      clipButton.Checked = false;
     }
 
     private void MainWindow_FormClosed(object sender, FormClosedEventArgs e) {
