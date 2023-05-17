@@ -31,8 +31,6 @@ namespace rasterization {
       centerSum.X += (point2.X + points[0].X) / 2;
       centerSum.Y += (point2.Y + points[0].Y) / 2;
       shapes.Add(new Line(point2, points[0]));
-
-      //ClippingRectangle = new(new Point(50, 50), new Point(250, 250));
     }
 
     public Polygon() { }
@@ -225,6 +223,27 @@ namespace rasterization {
       }
 
       return null;
+    }
+
+    public bool IsInside(Point location) {
+      int counter = 0;
+
+      foreach (var line in shapes) {
+        int startY = line.StartPoint.Y < line.EndPoint.Y ? line.StartPoint.Y : line.EndPoint.Y;
+        int endY = line.StartPoint.Y < line.EndPoint.Y ? line.EndPoint.Y : line.StartPoint.Y;
+
+        if (location.Y < startY || location.Y >= endY || line.StartPoint.Y == line.EndPoint.Y)
+          continue;
+
+        int startX = line.StartPoint.Y > line.EndPoint.Y ? line.EndPoint.X : line.StartPoint.X;
+        int endX = line.StartPoint.Y > line.EndPoint.Y ? line.StartPoint.X : line.EndPoint.X;
+        double m = (double) (location.Y - startY) / (endY - startY);
+
+        if (startX + (endX - startX) * m < location.X)
+          counter++;
+      }
+
+      return counter % 2 == 1;
     }
 
     public override bool Edit(Point position, int dx, int dy) {
