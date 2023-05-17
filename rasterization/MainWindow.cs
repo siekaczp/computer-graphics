@@ -1,6 +1,4 @@
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using System.Xml;
 
 namespace rasterization {
@@ -38,6 +36,7 @@ namespace rasterization {
       ShapeMoving,
       ShapeEditing,
       ChoosingClip,
+      CountPolygons,
     }
 
     private readonly Image moveIcon = Image.FromFile("move_icon.png");
@@ -274,6 +273,22 @@ namespace rasterization {
         canvasGraphics.Clear(Color.White);
         Render(canvasBitmap, shapes);
         canvas.Refresh();
+        break;
+
+      case State.CountPolygons:
+        state = State.Idle;
+        countButton.Checked = false;
+        int counter = 0;
+
+        foreach (var shape in shapes.Shapes) {
+          if (shape is not Polygon)
+            continue;
+
+          if ((shape as Polygon)!.IsInside(e.Location))
+            counter++;
+        }
+
+        MessageBox.Show($"The point is inside {counter} polygon{(counter != 1 ? "s" : "")}");
         break;
       }
     }
@@ -665,6 +680,17 @@ namespace rasterization {
 
       state = State.ShapeSelected;
       clipButton.Checked = false;
+    }
+
+    private void CountButton_Click(object sender, EventArgs e) {
+      if (state != State.CountPolygons) {
+        state = State.CountPolygons;
+        countButton.Checked = true;
+        return;
+      }
+
+      countButton.Checked = false;
+      state = State.Idle;
     }
 
     private void MainWindow_FormClosed(object sender, FormClosedEventArgs e) {
