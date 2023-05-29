@@ -5,7 +5,7 @@ namespace _3d {
     private readonly Scene scene;
     private bool mousePressed = false;
     private Point mousePosition;
-    private Timer timer;
+    private readonly Timer timer;
 
     public MainForm() {
       InitializeComponent();
@@ -51,26 +51,12 @@ namespace _3d {
       if (dx == 0 && dy == 0)
         return;
 
-      double x = scene.Camera.X;
-      double y = scene.Camera.Y;
-      double z = scene.Camera.Z;
-
       if (Math.Abs(dx) > Math.Abs(dy)) {
         double phi = (double) dx / 180;
-        scene.Camera.X = x * Math.Cos(phi) - z * Math.Sin(phi);
-        scene.Camera.Z = z * Math.Cos(phi) + x * Math.Sin(phi);
-        scene.ThetaY -= phi;
+        scene.Camera = Matrix4.RotateY(-phi) * scene.Camera;
       } else {
         double phi = (double) dy / 180;
-        double c = Math.Cos(phi);
-        double s = Math.Sin(phi);
-        double a = Math.Sqrt(x * x + z * z);
-        double k = c - (y * s) / a;
-
-        scene.Camera.X = k * x;
-        scene.Camera.Z = k * z;
-        scene.Camera.Y = y * c + a * s;
-        scene.ThetaX += phi;
+        scene.Camera = Matrix4.RotateX(phi) * scene.Camera;
       }
 
       scene.Render();

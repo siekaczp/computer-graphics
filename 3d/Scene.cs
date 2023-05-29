@@ -1,17 +1,28 @@
 ﻿using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
-using static System.Math;
-
 namespace _3d {
   internal class Scene {
-    public Vector3D Camera { get; set; } = new(0, 0, -250);
+    private readonly AffineVector OrientationUp = new(0, 1, 0, 0);
+    private readonly Matrix4 ProjectionMatrix;
+    private Matrix4 CameraMatrix = null!;
 
-    public double ThetaX { get; set; } = 0;
-    public double ThetaY { get; set; } = 0;
-    public double ThetaZ { get; set; } = 0;
+    private AffineVector camera = new(0, 0, -250);
+    public AffineVector Camera {
+      get => camera; set {
+        camera = value;
+        UpdateCameraMatrix();
+      }
+    }
 
-    private readonly int projectionPlaneDist;
+    private AffineVector cameraTarget = new(0, 0, 0);
+    public AffineVector CameraTarget {
+      get => cameraTarget; set {
+        cameraTarget = value;
+        UpdateCameraMatrix();
+      }
+    }
+
     private readonly PictureBox pictureBox;
     private readonly Bitmap bitmap;
     private readonly Rectangle size;
@@ -25,11 +36,35 @@ namespace _3d {
       bitmap = new(size.Width, size.Height, PixelFormat.Format24bppRgb);
       graphics = Graphics.FromImage(bitmap);
       pictureBox.Image = bitmap;
-      projectionPlaneDist = (int) (0.4 * size.Width);
+
+      ProjectionMatrix = new(new double[4, 4] {
+        { -size.Width * 0.4, 0, size.Width / 2, 0 },
+        { 0, size.Width * 0.4, size.Height / 2, 0 },
+        { 0, 0, 0, 1 },
+        { 0, 0, 1, 0 }
+      });
+
+      UpdateCameraMatrix();
+    }
+
+    private void UpdateCameraMatrix() {
+      AffineVector Z = Camera - CameraTarget;
+      Z.Length = 1;
+      AffineVector X = AffineVector.CrossProduct(OrientationUp, Z);
+      X.Length = 1;
+      AffineVector Y = AffineVector.CrossProduct(Z, X);
+      Y.Length = 1;
+
+      CameraMatrix = new(new double[4, 4] {
+        { X.X, X.Y, X.Z, AffineVector.DotProduct(X, Camera) },
+        { Y.X, Y.Y, Y.Z, AffineVector.DotProduct(Y, Camera) },
+        { Z.X, Z.Y, Z.Z, AffineVector.DotProduct(Z, Camera) },
+        { 0, 0, 0, 1 }
+      });
     }
 
     public void Update() {
-      cube.Rotate(0.05);
+      cube.Update(0.05);
     }
 
     public void Render() {
@@ -49,18 +84,9 @@ namespace _3d {
       pictureBox.Refresh();
     }
 
-    private Point Projection(Vector3D a) {
-      Matrix3 Mx = new(new double[3, 3] { { 1, 0, 0 }, { 0, Cos(ThetaX), Sin(ThetaX) }, { 0, -Sin(ThetaX), Cos(ThetaX) } });
-      Matrix3 My = new(new double[3, 3] { { Cos(ThetaY), 0, -Sin(ThetaY) }, { 0, 1, 0 }, { Sin(ThetaY), 0, Cos(ThetaY) } });
-      Matrix3 Mz = new(new double[3, 3] { { Cos(ThetaZ), Sin(ThetaZ), 0 }, { -Sin(ThetaZ), Cos(ThetaZ), 0 }, { 0, 0, 1 } });
-
-      Vector3D d = Mx * (My * (Mz * (a - Camera)));
-
-
-      int x = (int) (projectionPlaneDist / d.Z * d.X) + size.Width / 2;
-      int y = (int) (projectionPlaneDist / d.Z * d.Y) + size.Height / 2;
-
-      return new(x, y);
+    private Point Projection(AffineVector c) {
+      AffineVector d = ProjectionMatrix * (CameraMatrix * c);
+      return new((int) (d.X / d.W), (int) (d.Y / d.W));
     }
   }
 }
