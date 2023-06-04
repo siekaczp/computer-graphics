@@ -2,12 +2,9 @@
   internal class Cube {
     private double t = 0;
 
-    public Color Color { get; set; }
-
     private AffineVector[] vertices;
 
-    public Cube(int x, int y, int z, double size, Color color) {
-      Color = color;
+    public Cube(int x, int y, int z, double size) {
       vertices = new AffineVector[] {
         new(x - size / 2, y - size / 2, z - size / 2),
         new(x + size / 2, y - size / 2, z - size / 2),

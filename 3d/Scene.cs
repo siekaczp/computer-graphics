@@ -3,6 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace _3d {
   internal class Scene {
+    private readonly PictureBox pictureBox;
+    private readonly Bitmap bitmap;
+    private readonly Rectangle size;
+    private readonly Graphics graphics;
+
     private readonly AffineVector OrientationUp = new(0, 1, 0, 0);
     private readonly Matrix4 ProjectionMatrix;
     private Matrix4 CameraMatrix = null!;
@@ -23,12 +28,8 @@ namespace _3d {
       }
     }
 
-    private readonly PictureBox pictureBox;
-    private readonly Bitmap bitmap;
-    private readonly Rectangle size;
-    private readonly Graphics graphics;
-
-    private readonly Cube cube = new(0, 0, 0, 100, Color.Red);
+    private readonly AffineVector lightSource = new(250, 50, 0);
+    private readonly List<ISolid> solids = new();
 
     public Scene(PictureBox box) {
       pictureBox = box;
@@ -45,6 +46,8 @@ namespace _3d {
       });
 
       UpdateCameraMatrix();
+
+      solids.Add(new Sphere(0, 0, 0, 100));
     }
 
     private void UpdateCameraMatrix() {
@@ -64,7 +67,7 @@ namespace _3d {
     }
 
     public void Update() {
-      cube.Update(0.05);
+      //cube.Update(0.05);
     }
 
     public void Render() {
@@ -77,15 +80,28 @@ namespace _3d {
       Marshal.Copy(scan0, imageBytes, 0, imageBytes.Length);
       ImageByteArray imageByteArray = new(imageBytes, size, stride);
 
-      cube.Render(imageByteArray, Projection);
+      foreach (var solid in solids) {
+        Matrix4 M = solid.LocalToGlobal;
+        foreach (var triangle in solid.Triangles) {
+          Point p1 = Projection(triangle.V1.p, M);
+          Point p2 = Projection(triangle.V2.p, M);
+          Point p3 = Projection(triangle.V3.p, M);
+
+          if ((p2.X - p1.X) * (p3.Y - p1.Y) - (p2.Y - p1.Y) * (p3.X - p1.X) > 0) {
+            imageByteArray.DrawLine(p1, p2, Color.Black);
+            imageByteArray.DrawLine(p2, p3, Color.Black);
+            imageByteArray.DrawLine(p3, p1, Color.Black);
+          }
+        }
+      }
 
       Marshal.Copy(imageBytes, 0, scan0, imageBytes.Length);
       bitmap.UnlockBits(imageData);
       pictureBox.Refresh();
     }
 
-    private Point Projection(AffineVector c) {
-      AffineVector d = ProjectionMatrix * (CameraMatrix * c);
+    private Point Projection(AffineVector c, Matrix4 ToLocal) {
+      AffineVector d = ProjectionMatrix * (CameraMatrix * (ToLocal * c));
       return new((int) (d.X / d.W), (int) (d.Y / d.W));
     }
   }
