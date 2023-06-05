@@ -64,6 +64,7 @@ namespace _3d {
 
     private void Canvas_MouseWheel(object? sender, MouseEventArgs e) {
       scene.Camera.Z += e.Delta / 30;
+      scene.UpdateCameraMatrix();
       scene.Render();
     }
 

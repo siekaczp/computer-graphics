@@ -26,6 +26,8 @@
     public static AffineVector operator +(AffineVector a, AffineVector b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z, a.W + b.W);
     public static AffineVector operator *(double c, AffineVector a) => new(c * a.X, c * a.Y, c * a.Z, c * a.W);
 
+    public static AffineVector operator *(AffineVector a, AffineVector b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
+
     public static AffineVector operator +(AffineVector a) => a;
     public static AffineVector operator -(AffineVector a) => -1 * a;
     public static AffineVector operator -(AffineVector a, AffineVector b) => a + (-b);

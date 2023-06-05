@@ -88,5 +88,37 @@ namespace _3d {
         }
       }
     }
+
+    public void DrawTriangle(Triangle triangle, Func<AffineVector, Point> Projection, Color color) {
+      Point p1 = Projection(triangle.V1.p);
+      Point p2 = Projection(triangle.V2.p);
+      Point p3 = Projection(triangle.V3.p);
+
+      Point[] vertices = { p1, p2, p3 };
+      Array.Sort(vertices, (a, b) => a.Y - b.Y);
+
+      Point topVertex = vertices[0];
+      double invSlope1 = (double) (vertices[1].X - topVertex.X) / (vertices[1].Y - topVertex.Y);
+      double invSlope2 = (double) (vertices[2].X - topVertex.X) / (vertices[2].Y - topVertex.Y);
+
+      int startY = topVertex.Y;
+      int endY = vertices[2].Y;
+
+      for (int y = startY; y <= endY; y++) {
+        if (y == vertices[1].Y) {
+          topVertex = vertices[1];
+          invSlope1 = vertices[2].Y == topVertex.Y ? 0 : (double) (vertices[2].X - topVertex.X) / (vertices[2].Y - topVertex.Y);
+        }
+
+        int startX = (int) (topVertex.X + (y - topVertex.Y) * invSlope1);
+        int endX = (int) (vertices[0].X + (y - vertices[0].Y) * invSlope2);
+        if (endX < startX)
+          (startX, endX) = (endX, startX);
+
+        for (int x = startX; x <= endX; x++) {
+          PutPixel(x, y, color);
+        }
+      }
+    }
   }
 }

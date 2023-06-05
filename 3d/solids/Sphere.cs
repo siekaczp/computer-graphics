@@ -1,12 +1,17 @@
 ﻿namespace _3d {
   internal class Sphere : ISolid {
     private const int m = 20;
-    private const int n = 20;
+    private const int n = 30;
 
     private readonly Vertex[] vertices = new Vertex[m * n + 2];
 
     public Matrix4 LocalToGlobal { get; }
     public Triangle[] Triangles { get; } = new Triangle[2 * m * n];
+
+    public AffineVector Ka => new(0.05, 0.05, 0.15, 0);
+    public AffineVector Kd => new(0.2, 0.2, 0.8, 0);
+    public AffineVector Ks => new(0.4, 0.4, 0.4, 0);
+    public double M => 10;
 
     public Sphere(double x, double y, double z, double r) {
       LocalToGlobal = Matrix4.Translation(x, y, z);
