@@ -1,4 +1,5 @@
-﻿using System.Drawing.Imaging;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
 namespace _3d {
@@ -28,7 +29,7 @@ namespace _3d {
       }
     }
 
-    private readonly AffineVector lightSource = new(250, 150, 0);
+    private readonly AffineVector lightSource = new(250, -150, 200);
 
     private readonly AffineVector lightIntensity = new(1, 1, 1, 0);
 
@@ -50,7 +51,8 @@ namespace _3d {
 
       UpdateCameraMatrix();
 
-      solids.Add(new Sphere(0, 0, 0, 100));
+      //solids.Add(new Sphere(0, 0, 0, 100));
+      solids.Add(new Cylinder(0, -100, 0, 200, 100));
     }
 
     public void UpdateCameraMatrix() {
@@ -84,13 +86,10 @@ namespace _3d {
       ImageByteArray imageByteArray = new(imageBytes, size, stride);
 
       foreach (var solid in solids) {
-        Matrix4 M = solid.LocalToGlobal;
-        Point proj(AffineVector c) => Projection(c, M);
-
         foreach (var triangle in solid.Triangles) {
-          Point p1 = Projection(triangle.V1.p, M);
-          Point p2 = Projection(triangle.V2.p, M);
-          Point p3 = Projection(triangle.V3.p, M);
+          Point p1 = Projection(triangle.V1.p, solid.LocalToGlobal);
+          Point p2 = Projection(triangle.V2.p, solid.LocalToGlobal);
+          Point p3 = Projection(triangle.V3.p, solid.LocalToGlobal);
 
           if ((p2.X - p1.X) * (p3.Y - p1.Y) - (p2.Y - p1.Y) * (p3.X - p1.X) > 0) {
             var p = (double) 1 / 3 * (triangle.V1.p + triangle.V2.p + triangle.V3.p);
@@ -98,11 +97,7 @@ namespace _3d {
             n.Length = 1;
 
             Color color = PhongIlumination(solid, p, n);
-            imageByteArray.DrawTriangle(triangle, proj, color);
-
-            imageByteArray.DrawLine(p1, p2, Color.Black);
-            imageByteArray.DrawLine(p2, p3, Color.Black);
-            imageByteArray.DrawLine(p3, p1, Color.Black);
+            imageByteArray.DrawTriangle(new Point[] { p1, p2, p3 }, color);
           }
         }
       }
@@ -121,7 +116,7 @@ namespace _3d {
       var l = lightSource - p;
       l.Length = 1;
 
-      var v = p - camera; // ?
+      var v = p - camera;
       v.Length = 1;
       var r = 2 * AffineVector.DotProduct(n, l) * n - l;
 
@@ -131,7 +126,8 @@ namespace _3d {
       return Color.FromArgb(
         colorVector.X > 255 ? 255 : (int) colorVector.X,
         colorVector.Y > 255 ? 255 : (int) colorVector.Y,
-        colorVector.Z > 255 ? 255 : (int) colorVector.Z);
+        colorVector.Z > 255 ? 255 : (int) colorVector.Z
+      );
     }
   }
 }

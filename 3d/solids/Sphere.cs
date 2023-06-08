@@ -1,7 +1,7 @@
 ﻿namespace _3d {
   internal class Sphere : ISolid {
-    private const int m = 20;
-    private const int n = 30;
+    private const int m = 25;
+    private const int n = 20;
 
     private readonly Vertex[] vertices = new Vertex[m * n + 2];
 

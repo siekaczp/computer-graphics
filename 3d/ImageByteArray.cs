@@ -89,12 +89,7 @@ namespace _3d {
       }
     }
 
-    public void DrawTriangle(Triangle triangle, Func<AffineVector, Point> Projection, Color color) {
-      Point p1 = Projection(triangle.V1.p);
-      Point p2 = Projection(triangle.V2.p);
-      Point p3 = Projection(triangle.V3.p);
-
-      Point[] vertices = { p1, p2, p3 };
+    public void DrawTriangle(Point[] vertices, Color color) {
       Array.Sort(vertices, (a, b) => a.Y - b.Y);
 
       Point topVertex = vertices[0];
@@ -115,9 +110,8 @@ namespace _3d {
         if (endX < startX)
           (startX, endX) = (endX, startX);
 
-        for (int x = startX; x <= endX; x++) {
+        for (int x = startX; x <= endX; x++)
           PutPixel(x, y, color);
-        }
       }
     }
   }
